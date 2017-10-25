@@ -3,8 +3,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fftw3.h>
+#include <time.h>
 #include <float.h>
 #include <gsl/gsl_interp.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 #include <dnestvars.h>
 
@@ -43,6 +46,9 @@ int recon()
 
   recon_init();
 
+  //if(thistask == roottask)
+  //  test();
+
   dnest(argc, argv);
 
   recon_postproc();
@@ -50,6 +56,7 @@ int recon()
   recon_end();
   return 0;
 }
+
 
 int recon_postproc()
 {
@@ -138,7 +145,7 @@ int recon_postproc()
 
       for(j=0; j<nd_sim; j++)
       {
-        fprintf(fcon_all, "%f  %f\n", time_sim[j], flux_sim[j]);
+        fprintf(fcon_all, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale);
       }
       fprintf(fcon_all, "\n");
 
@@ -159,7 +166,7 @@ int recon_postproc()
     }
     for(j=0; j<nd_sim; j++)
     {
-      fprintf(fcon_mean, "%f %f %f\n", time_sim[j], flux_sim_mean[j], err_sim_mean[j]);
+      fprintf(fcon_mean, "%f %f %f\n", time_sim[j], flux_sim_mean[j]*flux_scale, err_sim_mean[j]*flux_scale);
     }
 
     fclose(fp);
@@ -217,10 +224,27 @@ int recon_init()
 
   time_media = (time_data[0] + time_data[ndata-1])/2.0;
   time_cad_min = time_media;
+  flux_data_min = flux_data_max = flux_data[0];
+  flux_scale = flux_data[0];
   for(i=1; i<ndata; i++)
   {
+    flux_scale += flux_data[i];
+
     if(time_data[i] - time_data[i-1] < time_cad_min)
       time_cad_min = time_data[i] - time_data[i-1];
+
+    if(flux_data_min > flux_data[i])
+      flux_data_min = flux_data[i];
+
+    if(flux_data_max < flux_data[i])
+      flux_data_max = flux_data[i];
+  }
+
+  flux_scale /= ndata;
+  for(i=0; i<ndata; i++)
+  {
+    flux_data[i] /= flux_scale;
+    err_data[i] /= flux_scale;
   }
 
   /* fft */
@@ -235,8 +259,8 @@ int recon_init()
   num_params = num_recon + num_params_psd;
   size_of_modeltype = num_params * sizeof(double);
 
-  var_range_model = malloc((num_params_psd+1)*sizeof(double *));
-  for(i=0; i<num_params_psd+1; i++)
+  var_range_model = malloc((num_params_psd+2)*sizeof(double *));
+  for(i=0; i<num_params_psd+2; i++)
   {
     var_range_model[i] = malloc(2*sizeof(double));
   }
@@ -249,6 +273,9 @@ int recon_init()
 
   var_range_model[i][0] = log(1.0e-10);
   var_range_model[i++][1] = log(1.0e3);
+
+  var_range_model[i][0] = -100.0;
+  var_range_model[i++][1] = 100.0;
 
   var_range_model[i][0] = -10.0;
   var_range_model[i++][1] = 10.0;
@@ -265,9 +292,6 @@ int recon_init()
   for(i=0; i<num_params; i++)
     par_fix[i] = 0;
 
-  //par_fix[2] = 1;
-  //par_fix_val[2] = -DBL_MAX;
-
   time_sim = malloc(nd_sim * sizeof(double));
   flux_sim = malloc(nd_sim * sizeof(double));
   flux_sim_mean = malloc(nd_sim * sizeof(double));
@@ -280,7 +304,6 @@ int recon_init()
 
   pfft = fftw_plan_dft_c2r_1d(nd_sim, fft_work, flux_sim, FFTW_MEASURE);
 
-  
   if(thistask == roottask)
   {
     get_num_particles(options_file);
@@ -317,18 +340,18 @@ int genlc(const void *model)
   arg = malloc(num_params_psd * sizeof(double));
   memcpy(arg, pm, num_params_psd * sizeof(double));
 
-  fft_work[0][0] = pm[num_params_psd+0];
+  fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
   fft_work[0][1] = 0.0;
 
-  for(i=0; i<nd_sim/2; i++)
+  for(i=0; i<nd_sim/2-1; i++)
   {
-    fft_work[i][0] = pm[num_params_psd+1+2*i];
-    fft_work[i][1] = pm[num_params_psd+1+2*i+1];
+    fft_work[i+1][0] = pm[num_params_psd+1+2*i];
+    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1];
   }
   fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1];
   fft_work[nd_sim/2][1] = 0.0;
 
-  for(i=0; i<nd_sim/2+1; i++)
+  for(i=1; i<nd_sim/2+1; i++)
   {
     freq = i*1.0/(nd_sim * DT/W);
     fft_work[i][0] *= sqrt(psdfunc(freq, arg)/2.0);
@@ -341,7 +364,7 @@ int genlc(const void *model)
   {
     //printf("%f\n", flux_workspace[i]);
     time_sim[i] = (i - nd_sim/2) * DT/W  + time_media;
-    flux_sim[i] /= sqrt(nd_sim);
+    flux_sim[i] = flux_sim[i]/sqrt(nd_sim);
   }
 
   return 0;
@@ -375,12 +398,12 @@ void from_prior_recon(void *model)
   int i;
   double *pm = (double *)model;
 
-  for(i=0; i<num_params_psd; i++)
+  for(i=0; i<num_params_psd+1; i++)
   {
     pm[i] = var_range_model[i][0] + dnest_rand()*(par_range_model[i][1] - par_range_model[i][0]);
   }
 
-  for(i=0; i<num_recon; i++)
+  for(i=1; i<num_recon; i++)
     pm[i+num_params_psd] = dnest_randn();
 
   for(i=0; i<num_params; i++)
@@ -457,7 +480,7 @@ double perturb_recon(void *model)
 
   //width = ( par_range_model[which][1] - par_range_model[which][0] );
   
-  if(which < num_params_psd)
+  if(which < num_params_psd + 1)
   {
     pm[which] += dnest_randh() * width;
     wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
@@ -628,11 +651,7 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
     sscanf(buf, "%lf %lf %lf\n", &t[i], &f[i], &e[i]);
   }
   fclose(fp);
-  
-  /*for(i=n-1; i>=0; i--)
-  {
-    t[i] -= t[0];
-  }*/
+
   return 0;
 }
 
@@ -671,8 +690,40 @@ double psd_power_law(double fk, double *arg)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
 
-  if(fk < 1.0/(1.0*(time_data[ndata-1] -time_data[0])))
-    return 0.0;
-  else
-    return A * pow(fk, -alpha) + cnoise;
+  return A * pow(fk, -alpha) + cnoise;
+}
+
+void test()
+{
+  int i;
+  void *model;
+  double *pm;
+  
+  const gsl_rng_type * gsl_T;
+  gsl_rng * gsl_r;
+  gsl_T = gsl_rng_default;
+  gsl_r = gsl_rng_alloc (gsl_T);
+  gsl_rng_set(gsl_r, time(NULL));
+
+  model = malloc(size_of_modeltype);
+  
+  pm = (double *)model;
+
+  pm[0] = log(1.0e2);
+  pm[1] = 2.0;
+  pm[2] = log(1.0e-50);
+  pm[3] = 1.0;
+  
+  for(i=1; i<num_recon; i++)
+  {
+    pm[num_params_psd + i] = gsl_ran_gaussian(gsl_r, 1.0);
+  }
+
+  genlc(model);
+  
+  for(i=0; i<nd_sim; i++)
+  {
+    printf("%f %f\n", time_sim[i], flux_sim[i]);
+  }
+
 }

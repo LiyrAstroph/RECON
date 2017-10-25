@@ -18,7 +18,7 @@ extern char proc_name[MPI_MAX_PROCESSOR_NAME];
 
 extern int ndata;
 extern double *flux_data, *time_data, *err_data;
-extern double time_media, time_cad_min;
+extern double time_media, time_cad_min, flux_data_min, flux_data_max, flux_scale;
 
 extern int nd_sim, V, W;
 extern double DT;

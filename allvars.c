@@ -13,7 +13,7 @@ char proc_name[MPI_MAX_PROCESSOR_NAME];
 
 int ndata;
 double *flux_data, *time_data, *err_data;
-double time_media, time_cad_min;
+double time_media, time_cad_min, flux_data_min, flux_data_max, flux_scale;
 
 int nd_sim, V, W;
 double DT;
