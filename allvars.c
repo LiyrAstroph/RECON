@@ -13,10 +13,10 @@ char proc_name[MPI_MAX_PROCESSOR_NAME];
 
 int ndata;
 double *flux_data, *time_data, *err_data;
-double time_media, time_cad_min, flux_data_min, flux_data_max, flux_scale;
+double time_media, time_cad_min, flux_data_min, flux_data_max, flux_scale, flux_mean;
 
-int nd_sim, V, W;
-double DT;
+int nd_sim;
+double DT, V, W;
 double *time_sim, *flux_sim, *flux_data_sim;
 double *flux_sim_mean, *err_sim_mean;
 
@@ -41,4 +41,5 @@ double temperature;
 int flag_restart;
 int flag_sample_info;
 int flag_temp;
+int flag_sim;
 int flag_help;

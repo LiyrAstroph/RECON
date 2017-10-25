@@ -46,13 +46,20 @@ int recon()
 
   recon_init();
 
-  //if(thistask == roottask)
-  //  test();
+  if(flag_sim == 1)
+  {
+    if(thistask == roottask)
+    {
+      sim();
+    }
 
-  dnest(argc, argv);
-
-  recon_postproc();
-
+  }
+  else
+  {
+    dnest(argc, argv);
+    recon_postproc();
+  }
+  
   recon_end();
   return 0;
 }
@@ -139,13 +146,13 @@ int recon_postproc()
       {
         flux_data_sim[j] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[j], gsl_acc_sim);
 
-        fprintf(fcon, "%f  %f\n", time_data[j], flux_data_sim[j]);
+        fprintf(fcon, "%f  %f\n", time_data[j], flux_data_sim[j]*flux_scale+flux_mean);
       }
       fprintf(fcon, "\n");
 
       for(j=0; j<nd_sim; j++)
       {
-        fprintf(fcon_all, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale);
+        fprintf(fcon_all, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale + flux_mean);
       }
       fprintf(fcon_all, "\n");
 
@@ -166,7 +173,7 @@ int recon_postproc()
     }
     for(j=0; j<nd_sim; j++)
     {
-      fprintf(fcon_mean, "%f %f %f\n", time_sim[j], flux_sim_mean[j]*flux_scale, err_sim_mean[j]*flux_scale);
+      fprintf(fcon_mean, "%f %f %f\n", time_sim[j], flux_sim_mean[j]*flux_scale+flux_mean, err_sim_mean[j]*flux_scale);
     }
 
     fclose(fp);
@@ -182,6 +189,7 @@ int recon_init()
 {
   char fname[200];
   int i;
+  double Tall, Tmin, Tmax;
 
   /* setup functions used for dnest*/
   from_prior = from_prior_recon;
@@ -197,9 +205,9 @@ int recon_init()
 
   roottask = 0;
 
-  psdfunc = psd_drw;
+  psdfunc = psd_power_law;
 
-  strcpy(fname, "data/arp151_con_bentz2009.txt");
+  strcpy(fname, "data/sim.txt");
 
   if(thistask == roottask)
   {
@@ -225,10 +233,10 @@ int recon_init()
   time_media = (time_data[0] + time_data[ndata-1])/2.0;
   time_cad_min = time_media;
   flux_data_min = flux_data_max = flux_data[0];
-  flux_scale = flux_data[0];
+  flux_mean = flux_data[0];
   for(i=1; i<ndata; i++)
   {
-    flux_scale += flux_data[i];
+    flux_mean += flux_data[i];
 
     if(time_data[i] - time_data[i-1] < time_cad_min)
       time_cad_min = time_data[i] - time_data[i-1];
@@ -240,19 +248,35 @@ int recon_init()
       flux_data_max = flux_data[i];
   }
 
-  flux_scale /= ndata;
+  flux_mean /= ndata;
+  flux_scale = (flux_data_max - flux_data_min)/2.0;
   for(i=0; i<ndata; i++)
   {
-    flux_data[i] /= flux_scale;
+    flux_data[i] = (flux_data[i] - flux_mean)/flux_scale;
     err_data[i] /= flux_scale;
   }
 
   /* fft */
-  V = 2;
-  W = 2;
-  DT = (time_data[ndata-1] - time_data[0])/(ndata -1 );
-  nd_sim = ndata * V * W;
-
+  if(flag_sim==1)
+  {
+    time_media = 0.0;
+    DT = 1.0;
+    nd_sim = 1000;
+  }
+  else
+  {
+    V = 2.0;
+    W = 2.0;
+    Tall = time_data[ndata-1] - time_data[0];
+    Tmin = time_data[0] - 0.5*(V-1.0)*Tall;
+    Tmax = time_data[ndata-1] + 0.5*(V-1.0)*Tall;
+    Tall = Tmax - Tmin;
+  
+    DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
+    nd_sim = Tall/DT + 1;
+    nd_sim = (nd_sim/2) * 2; //make sure it is an even number.
+  }
+  
   num_recon = nd_sim;
   num_params_psd = 3;
 
@@ -268,8 +292,8 @@ int recon_init()
   var_range_model[i][0] = log(1.0e-10);
   var_range_model[i++][1] = log(1.0e6);
 
-  var_range_model[i][0] = log(1.0e-5);
-  var_range_model[i++][1] = log(1.0e0);
+  var_range_model[i][0] = 0.0;
+  var_range_model[i++][1] = 5.0;
 
   var_range_model[i][0] = log(1.0e-10);
   var_range_model[i++][1] = log(1.0e3);
@@ -317,13 +341,34 @@ int recon_init()
 
 int recon_end()
 {
+  int i;
+
   fftw_destroy_plan(pfft);
 
   gsl_interp_free(gsl_linear_sim);
   gsl_interp_accel_free(gsl_acc_sim);
 
+  fftw_free(fft_work);
+  free(perturb_accept);
+  
+  for(i=0; i<num_params_psd+2; i++)
+  {
+    free(var_range_model[i]);
+  }
+  free(var_range_model);
+  for(i=0; i<num_params; i++)
+  {
+    free(par_range_model[i]);
+  }
+  free(par_range_model);
+
+  free(par_fix);
+  free(par_fix_val);
+  
   free(time_sim);
   free(flux_sim);
+  free(flux_sim_mean);
+  free(err_sim_mean);
   free(time_data);
   free(flux_data);
   free(flux_data_sim);
@@ -353,7 +398,7 @@ int genlc(const void *model)
 
   for(i=1; i<nd_sim/2+1; i++)
   {
-    freq = i*1.0/(nd_sim * DT/W);
+    freq = i*1.0/(nd_sim * DT);
     fft_work[i][0] *= sqrt(psdfunc(freq, arg)/2.0);
     fft_work[i][1] *= sqrt(psdfunc(freq, arg)/2.0);
   }
@@ -363,7 +408,7 @@ int genlc(const void *model)
   for(i=0; i<nd_sim; i++)
   {
     //printf("%f\n", flux_workspace[i]);
-    time_sim[i] = (i - nd_sim/2) * DT/W  + time_media;
+    time_sim[i] = (i - nd_sim/2) * DT  + time_media;
     flux_sim[i] = flux_sim[i]/sqrt(nd_sim);
   }
 
@@ -691,6 +736,50 @@ double psd_power_law(double fk, double *arg)
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
 
   return A * pow(fk, -alpha) + cnoise;
+}
+
+void sim()
+{
+  FILE *fp;
+  int i;
+  void *model;
+  double *pm;
+  
+  const gsl_rng_type * gsl_T;
+  gsl_rng * gsl_r;
+  gsl_T = gsl_rng_default;
+  gsl_r = gsl_rng_alloc (gsl_T);
+  gsl_rng_set(gsl_r, time(NULL));
+
+  model = malloc(size_of_modeltype);
+  
+  pm = (double *)model;
+
+  pm[0] = log(1.0);
+  pm[1] = 1.5;
+  pm[2] = log(1.0e-50);
+  pm[3] = 0.0;
+  
+  for(i=1; i<num_recon; i++)
+  {
+    pm[num_params_psd + i] = gsl_ran_gaussian(gsl_r, 1.0);
+  }
+
+  genlc(model);
+  
+  fp = fopen("./data/sim.txt", "w");
+  if(fp==NULL)
+  {
+    printf("Cannot open file sim.txt.\n");
+    exit(0);
+  }
+
+  for(i=0; i<nd_sim; i+=(int)(nd_sim/100))
+  {
+    fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], 0.1);
+  }
+  
+  fclose(fp);
 }
 
 void test()

@@ -28,8 +28,9 @@ int main(int argc, char **argv)
     flag_restart = 0;
     flag_sample_info = 0;
     flag_temp = 0;
-
-    while( (opt = getopt(argc, argv, "pt:rch")) != -1)
+    flag_sim = 0;
+    
+    while( (opt = getopt(argc, argv, "pgt:rch")) != -1)
     {
       switch(opt)
       {
@@ -37,6 +38,10 @@ int main(int argc, char **argv)
           flag_postprc = 1;
           temperature = 1.0;
           printf("# MCMC samples available, only do post-processing.\n");
+          break;
+        case 'g':
+          flag_sim = 1;
+          printf("# generate mock time series.\n");
           break;
         case 't': /* temperature for postprocessing */
           flag_temp = 1;
@@ -78,6 +83,12 @@ int main(int argc, char **argv)
       }
     }
   }
+
+  MPI_Bcast(&flag_sim, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&flag_postprc, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&flag_restart, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&flag_temp, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&flag_sample_info, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
   recon();
 
