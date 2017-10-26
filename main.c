@@ -10,6 +10,7 @@
 
 #include "dnestvars.h"
 
+
 int main(int argc, char **argv)
 {
   int opt;
@@ -19,6 +20,7 @@ int main(int argc, char **argv)
   MPI_Comm_size(MPI_COMM_WORLD, &totaltask);
   MPI_Get_processor_name(proc_name, &namelen);
 
+  /* cope with command argument */
   if(thistask == roottask)
   {
     opterr = 0;
@@ -29,7 +31,7 @@ int main(int argc, char **argv)
     flag_sample_info = 0;
     flag_temp = 0;
     flag_sim = 0;
-    
+
     while( (opt = getopt(argc, argv, "pgt:rch")) != -1)
     {
       switch(opt)
@@ -39,7 +41,7 @@ int main(int argc, char **argv)
           temperature = 1.0;
           printf("# MCMC samples available, only do post-processing.\n");
           break;
-        case 'g':
+        case 'g':  /* generate mock light curve */
           flag_sim = 1;
           printf("# generate mock time series.\n");
           break;
@@ -58,12 +60,12 @@ int main(int argc, char **argv)
             exit(0);
           }
           break;
-        case 'r':
+        case 'r':   /* restart */
           flag_restart = 1;
           printf("# Restart run.\n");
           break;
 
-        case 'c':
+        case 'c': 
           printf("# Recalculate the sample info.\n");
           flag_sample_info = 1;
           break;
@@ -84,12 +86,14 @@ int main(int argc, char **argv)
     }
   }
 
+  /* broadcast flags */
   MPI_Bcast(&flag_sim, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_postprc, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_restart, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_temp, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_sample_info, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
+  /* run the code */
   recon();
 
   MPI_Finalize();

@@ -5,6 +5,7 @@
 #include <fftw3.h>
 #include <time.h>
 #include <float.h>
+#include <string.h>
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -180,6 +181,9 @@ int recon_postproc()
     fclose(fcon);
     fclose(fcon_all);
     fclose(fcon_mean);
+
+    free(post_model);
+    free(posterior_sample);
   }
 
   return 0;
@@ -412,6 +416,7 @@ int genlc(const void *model)
     flux_sim[i] = flux_sim[i]/sqrt(nd_sim);
   }
 
+  free(arg);
   return 0;
 }
 
@@ -815,4 +820,7 @@ void test()
     printf("%f %f\n", time_sim[i], flux_sim[i]);
   }
 
+  free(model);
+
+  return;
 }
