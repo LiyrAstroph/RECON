@@ -15,6 +15,8 @@ int ndata;
 double *flux_data, *time_data, *err_data;
 double time_media, time_cad_min, flux_data_min, flux_data_max, flux_scale, flux_mean;
 
+double freq_limit_sim, freq_limit_data;
+
 int nd_sim;
 double DT, V, W;
 double *time_sim, *flux_sim, *flux_data_sim;

@@ -312,7 +312,9 @@ int recon_init()
     time_media = 0.0;
     DT = parset.DT;
     nd_sim = parset.nd_sim;
-
+    
+    freq_limit_data = 1.0/(nd_sim * DT);
+    freq_limit_sim = 1.0e-3;
   }
   else
   {
@@ -376,6 +378,10 @@ int recon_init()
     DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
     nd_sim = Tall/DT + 1;
     nd_sim = (nd_sim/2) * 2; //make sure it is an even number.
+    printf("%d\n", nd_sim);
+
+    freq_limit_data = 1.0/(time_data[ndata-1] - time_data[0]);
+    freq_limit_sim = 1.0e-3;
   }
   
   num_recon = nd_sim;
@@ -402,7 +408,7 @@ int recon_init()
       break;
 
     case 1:
-      var_range_model[i][0] = log(1.0e-5);
+      var_range_model[i][0] = log(freq_limit_data);
       var_range_model[i++][1] = log(1.0e0);
       break;
 
@@ -846,15 +852,18 @@ double psd_drw(double fk, double *arg)
 {
   double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
 
-  return A/(1.0 + pow(fk/fknee, 2.0));// + cnoise;
+  if(fk < freq_limit_sim)
+    return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
+  else
+    return A/(1.0 + pow(fk/fknee, 2.0));// + cnoise;
 }
 
 double psd_power_law(double fk, double *arg)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
 
-  if(fk < 1.0e-3)
-    return 0.0;
+  if(fk < freq_limit_sim)
+    return A*pow(freq_limit_sim, -alpha);
   else
     return A * pow(fk, -alpha);
 }
@@ -897,7 +906,7 @@ void sim()
     exit(0);
   }
 
-  for(i=0; i<nd_sim; i+=(int)(nd_sim/100))
+  for(i=0; i<nd_sim; i++)
   {
     fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], 0.1);
   }

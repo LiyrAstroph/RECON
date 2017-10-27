@@ -11,8 +11,8 @@ FileDir    .               # file direcotry
 
 FileName   data/sim.txt     # file name
 
-V          2.0              # factor for extension of time interval in term of data
-W          4.0              # factor for time resolution in terms of data  
+V          1.2              # factor for extension of time interval in term of data
+W          1.0              # factor for time resolution in terms of data  
 
 #===============================================
 # only for simulation (-g option)
