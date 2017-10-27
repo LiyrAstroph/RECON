@@ -215,70 +215,79 @@ int recon_init()
       case 0:
         psdfunc = psd_power_law;
         parset.num_params_psd = 3;
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+
+        if(flag_sim == 1)
+        {
+          sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
         
-        if(parset.psd_arg[0] <=0.0)
-        {
-          printf("# Incorrect 1st PSDArg.\n");
-          exit(0);
+        
+          if(parset.psd_arg[0] <=0.0)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[0] = log(parset.psd_arg[0]);
+          }
+        
+          if(parset.psd_arg[2] < 0.0)
+          {
+            printf("# Incorrect 3rd PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[2] == 0.0)
+          {
+            parset.psd_arg[2] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[2] = log(parset.psd_arg[2]);
+          }
         }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-        if(parset.psd_arg[2] < 0.0)
-        {
-          printf("# Incorrect 3rd PSDArg.\n");
-          exit(0);
-        }
-        else if(parset.psd_arg[2] == 0.0)
-        {
-          parset.psd_arg[2] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[2] = log(parset.psd_arg[2]);
-        }
-  
         break;
   
       case 1:
         psdfunc = psd_drw;
         parset.num_params_psd = 3;
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
 
-        if(parset.psd_arg[0] <=0.0)
+        if(flag_sim == 1)
         {
-          printf("# Incorrect 1st PSDArg.\n");
-          exit(0);
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
+          sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
 
-        if(parset.psd_arg[1] <=0.0)
-        {
-          printf("# Incorrect 2nd PSDArg.\n");
-          exit(0);
-        }
-        else
-        {
-          parset.psd_arg[1] = log(parset.psd_arg[1]);
-        }
+          if(parset.psd_arg[0] <=0.0)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[0] = log(parset.psd_arg[0]);
+          }
 
-        if(parset.psd_arg[2] < 0.0)
-        {
-          printf("# Incorrect 3rd PSDArg.\n");
-          exit(0);
-        }
-        else if(parset.psd_arg[2] == 0.0)
-        {
-          parset.psd_arg[2] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[2] = log(parset.psd_arg[2]);
+          if(parset.psd_arg[1] <=0.0)
+          {
+            printf("# Incorrect 2nd PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[1] = log(parset.psd_arg[1]);
+          }
+
+          if(parset.psd_arg[2] < 0.0)
+          {
+            printf("# Incorrect 3rd PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[2] == 0.0)
+          {
+            parset.psd_arg[2] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[2] = log(parset.psd_arg[2]);
+          }
         }
 
         break;
@@ -286,7 +295,9 @@ int recon_init()
       default:
         psdfunc = psd_power_law;
         parset.num_params_psd = 3;
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+        parset.psd_arg[0] = log(1.0e0);
+        parset.psd_arg[1] = 1.5;
+        parset.psd_arg[2] = -DBL_MAX;
         break;
     }
   }
@@ -295,64 +306,66 @@ int recon_init()
   MPI_Bcast(&parset.num_params_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(parset.psd_arg, parset.num_params_psd, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
 
-  sprintf(fname, "%s/%s", parset.file_dir, parset.file_name);
-
-  if(thistask == roottask)
-  {
-    ndata = get_line_number(fname);
-  }
-
-  MPI_Bcast(&ndata, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-
-  time_data = malloc(ndata * sizeof(double));
-  flux_data = malloc(ndata * sizeof(double));
-  err_data = malloc(ndata * sizeof(double));
-  flux_data_sim = malloc(ndata * sizeof(double));
-
-  if(thistask == roottask)
-  {
-    read_data(fname, ndata, time_data, flux_data, err_data);
-  }
-
-  MPI_Bcast(time_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(flux_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(err_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
-
-  time_media = (time_data[0] + time_data[ndata-1])/2.0;
-  time_cad_min = time_media;
-  flux_data_min = flux_data_max = flux_data[0];
-  flux_mean = flux_data[0];
-  for(i=1; i<ndata; i++)
-  {
-    flux_mean += flux_data[i];
-
-    if(time_data[i] - time_data[i-1] < time_cad_min)
-      time_cad_min = time_data[i] - time_data[i-1];
-
-    if(flux_data_min > flux_data[i])
-      flux_data_min = flux_data[i];
-
-    if(flux_data_max < flux_data[i])
-      flux_data_max = flux_data[i];
-  }
-
-  flux_mean /= ndata;
-  flux_scale = (flux_data_max - flux_data_min)/2.0;
-  for(i=0; i<ndata; i++)
-  {
-    flux_data[i] = (flux_data[i] - flux_mean)/flux_scale;
-    err_data[i] /= flux_scale;
-  }
-
   /* fft */
   if(flag_sim==1)
   {
     time_media = 0.0;
     DT = parset.DT;
     nd_sim = parset.nd_sim;
+
   }
   else
   {
+    sprintf(fname, "%s/%s", parset.file_dir, parset.file_name);
+  
+    if(thistask == roottask)
+    {
+      ndata = get_line_number(fname);
+    }
+ 
+    MPI_Bcast(&ndata, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+ 
+    time_data = malloc(ndata * sizeof(double));
+    flux_data = malloc(ndata * sizeof(double));
+    err_data = malloc(ndata * sizeof(double));
+    flux_data_sim = malloc(ndata * sizeof(double));
+ 
+    if(thistask == roottask)
+    {
+      read_data(fname, ndata, time_data, flux_data, err_data);
+    }
+ 
+    MPI_Bcast(time_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+    MPI_Bcast(flux_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+    MPI_Bcast(err_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+ 
+    time_media = (time_data[0] + time_data[ndata-1])/2.0;
+    time_cad_min = time_media;
+    flux_data_min = flux_data_max = flux_data[0];
+    flux_mean = flux_data[0];
+    for(i=1; i<ndata; i++)
+    {
+      flux_mean += flux_data[i];
+ 
+      if(time_data[i] - time_data[i-1] < time_cad_min)
+        time_cad_min = time_data[i] - time_data[i-1];
+ 
+      if(flux_data_min > flux_data[i])
+        flux_data_min = flux_data[i];
+ 
+      if(flux_data_max < flux_data[i])
+        flux_data_max = flux_data[i];
+    }
+ 
+    flux_mean /= ndata;
+    flux_scale = (flux_data_max - flux_data_min)/2.0;
+    for(i=0; i<ndata; i++)
+    {
+      flux_data[i] = (flux_data[i] - flux_mean)/flux_scale;
+      err_data[i] /= flux_scale;
+    }
+
+  
     V = parset.V;
     W = parset.W;
     Tall = time_data[ndata-1] - time_data[0];
@@ -377,11 +390,26 @@ int recon_init()
     var_range_model[i] = malloc(2*sizeof(double));
   }
   i=0;
+
   var_range_model[i][0] = log(1.0e-10);
   var_range_model[i++][1] = log(1.0e6);
+  
+  switch(parset.psd_type)
+  {
+    case 0:
+      var_range_model[i][0] = 0.0;
+      var_range_model[i++][1] = 5.0;
+      break;
 
-  var_range_model[i][0] = 0.0;
-  var_range_model[i++][1] = 5.0;
+    case 1:
+      var_range_model[i][0] = log(1.0e-5);
+      var_range_model[i++][1] = log(1.0e0);
+      break;
+
+    default:
+      var_range_model[i][0] = 0.0;
+      var_range_model[i++][1] = 5.0;
+  }
 
   var_range_model[i][0] = log(1.0e-10);
   var_range_model[i++][1] = log(1.0e3);
@@ -818,7 +846,7 @@ double psd_drw(double fk, double *arg)
 {
   double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
 
-  return A/(1.0 + pow(fk/fknee, 2.0)) + cnoise;
+  return A/(1.0 + pow(fk/fknee, 2.0));// + cnoise;
 }
 
 double psd_power_law(double fk, double *arg)
