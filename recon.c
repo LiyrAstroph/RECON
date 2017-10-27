@@ -46,14 +46,13 @@ int recon()
   }
 
   recon_init();
-
+  
   if(flag_sim == 1)
   {
     if(thistask == roottask)
     {
       sim();
     }
-
   }
   else
   {
@@ -209,9 +208,94 @@ int recon_init()
 
   roottask = 0;
 
-  psdfunc = psd_power_law;
+  if(thistask == roottask)
+  {
+    switch(parset.psd_type)
+    {
+      case 0:
+        psdfunc = psd_power_law;
+        parset.num_params_psd = 3;
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+        
+        if(parset.psd_arg[0] <=0.0)
+        {
+          printf("# Incorrect 1st PSDArg.\n");
+          exit(0);
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
+        if(parset.psd_arg[2] < 0.0)
+        {
+          printf("# Incorrect 3rd PSDArg.\n");
+          exit(0);
+        }
+        else if(parset.psd_arg[2] == 0.0)
+        {
+          parset.psd_arg[2] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
+  
+        break;
+  
+      case 1:
+        psdfunc = psd_drw;
+        parset.num_params_psd = 3;
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
 
-  strcpy(fname, "data/sim.txt");
+        if(parset.psd_arg[0] <=0.0)
+        {
+          printf("# Incorrect 1st PSDArg.\n");
+          exit(0);
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
+
+        if(parset.psd_arg[1] <=0.0)
+        {
+          printf("# Incorrect 2nd PSDArg.\n");
+          exit(0);
+        }
+        else
+        {
+          parset.psd_arg[1] = log(parset.psd_arg[1]);
+        }
+
+        if(parset.psd_arg[2] < 0.0)
+        {
+          printf("# Incorrect 3rd PSDArg.\n");
+          exit(0);
+        }
+        else if(parset.psd_arg[2] == 0.0)
+        {
+          parset.psd_arg[2] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
+
+        break;
+  
+      default:
+        psdfunc = psd_power_law;
+        parset.num_params_psd = 3;
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+        break;
+    }
+  }
+
+  MPI_Bcast(&psdfunc, sizeof(psdfunc), MPI_BYTE, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&parset.num_params_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(parset.psd_arg, parset.num_params_psd, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+
+  sprintf(fname, "%s/%s", parset.file_dir, parset.file_name);
 
   if(thistask == roottask)
   {
@@ -264,13 +348,13 @@ int recon_init()
   if(flag_sim==1)
   {
     time_media = 0.0;
-    DT = 1.0;
-    nd_sim = 1000;
+    DT = parset.DT;
+    nd_sim = parset.nd_sim;
   }
   else
   {
-    V = 2.0;
-    W = 2.0;
+    V = parset.V;
+    W = parset.W;
     Tall = time_data[ndata-1] - time_data[0];
     Tmin = time_data[0] - 0.5*(V-1.0)*Tall;
     Tmax = time_data[ndata-1] + 0.5*(V-1.0)*Tall;
@@ -282,7 +366,7 @@ int recon_init()
   }
   
   num_recon = nd_sim;
-  num_params_psd = 3;
+  num_params_psd = parset.num_params_psd;
 
   num_params = num_recon + num_params_psd;
   size_of_modeltype = num_params * sizeof(double);
@@ -339,7 +423,7 @@ int recon_init()
   MPI_Bcast(&num_particles, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
   perturb_accept = malloc(num_particles * sizeof(int));
-
+  
   return 0;
 }
 
@@ -506,7 +590,7 @@ double perturb_recon(void *model)
   do
   {
     rnd = dnest_rand();
-    if(rnd < 0.1)
+    if(rnd < 0.5)
       which = dnest_rand_int(num_params_psd);
     else
       which = dnest_rand_int(num_recon) + num_params_psd;
@@ -515,8 +599,9 @@ double perturb_recon(void *model)
   which_parameter_update = which;
 
   /* level-dependent width */
-  which_level_update = which_level_update > (size_levels - 10)?(size_levels-10):which_level_update;
+  which_level_update = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
   which_level_update = which_level_update <0?0:which_level_update;
+
   if( which_level_update != 0)
   {
     limit1 = limits[(which_level_update-1) * num_params *2 + which *2];
@@ -740,7 +825,10 @@ double psd_power_law(double fk, double *arg)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
 
-  return A * pow(fk, -alpha) + cnoise;
+  if(fk < 1.0e-3)
+    return 0.0;
+  else
+    return A * pow(fk, -alpha);
 }
 
 void sim()
@@ -749,7 +837,8 @@ void sim()
   int i;
   void *model;
   double *pm;
-  
+  char fname[200];
+
   const gsl_rng_type * gsl_T;
   gsl_rng * gsl_r;
   gsl_T = gsl_rng_default;
@@ -760,9 +849,9 @@ void sim()
   
   pm = (double *)model;
 
-  pm[0] = log(1.0);
-  pm[1] = 1.5;
-  pm[2] = log(1.0e-50);
+  pm[0] = parset.psd_arg[0];
+  pm[1] = parset.psd_arg[1];
+  pm[2] = parset.psd_arg[2];
   pm[3] = 0.0;
   
   for(i=1; i<num_recon; i++)
@@ -772,10 +861,11 @@ void sim()
 
   genlc(model);
   
-  fp = fopen("./data/sim.txt", "w");
+  sprintf(fname, "%s/%s", parset.file_dir, parset.file_sim);
+  fp = fopen(fname, "w");
   if(fp==NULL)
   {
-    printf("Cannot open file sim.txt.\n");
+    printf("Cannot open file fname.\n");
     exit(0);
   }
 

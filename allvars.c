@@ -43,3 +43,6 @@ int flag_sample_info;
 int flag_temp;
 int flag_sim;
 int flag_help;
+int flag_end;
+
+PARSET parset;

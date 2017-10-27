@@ -52,5 +52,24 @@ extern int flag_sample_info;
 extern int flag_temp;
 extern int flag_sim;
 extern int flag_help;
+extern int flag_end;
+
+typedef struct
+{
+  char file_dir[200]; 
+  char param_file[200]; 
+  char file_name[200];
+
+  double V, W;
+
+  int psd_type, num_params_psd;
+  char str_psd_arg[200];
+  double psd_arg[20];  // maximal number of arguments is 20.
+
+  char file_sim[200];
+  int nd_sim;
+  double DT;
+}PARSET;
+extern PARSET parset;
 
 #endif
