@@ -57,7 +57,7 @@ endif
 EXEC     = recon
 SRC      = ./
 OBJS     = $(SRC)/main.o $(SRC)/allvars.o $(SRC)/recon.o $(SRC)/system.o $(SRC)/help.o \
-           $(SRC)/read.o
+           $(SRC)/read.o $(SRC)/psd.o
  
 INCL     = Makefile proto.h allvars.h      
 

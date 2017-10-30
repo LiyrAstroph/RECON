@@ -295,10 +295,20 @@ int recon_init()
       default:
         psdfunc = psd_power_law;
         parset.num_params_psd = 3;
-        parset.psd_arg[0] = log(1.0e0);
-        parset.psd_arg[1] = 1.5;
-        parset.psd_arg[2] = -DBL_MAX;
+        if(flag_sim == 1)
+        {
+          parset.psd_arg[0] = log(1.0e0);
+          parset.psd_arg[1] = 1.5;
+          parset.psd_arg[2] = -DBL_MAX;
+        }
         break;
+    }
+    sprintf(fname, "%s/data/recon_info.txt", parset.file_dir);
+    finfo = fopen(fname, "w");
+    if(finfo == NULL)
+    {
+      printf("Cannot open file %s.\n", fname);
+      exit(0);
     }
   }
 
@@ -309,11 +319,13 @@ int recon_init()
   /* fft */
   if(flag_sim==1)
   {
+    V = 10;
+    W = 10;
     time_media = 0.0;
-    DT = parset.DT;
-    nd_sim = parset.nd_sim;
+    DT = parset.DT/W;
+    nd_sim = parset.nd_sim * W * V;
     
-    freq_limit_data = 1.0/(nd_sim * DT);
+    freq_limit_data = 1.0/(nd_sim * DT/W);
     freq_limit_sim = 1.0e-3;
   }
   else
@@ -335,14 +347,16 @@ int recon_init()
     if(thistask == roottask)
     {
       read_data(fname, ndata, time_data, flux_data, err_data);
+
+      psddata_cal();
     }
  
     MPI_Bcast(time_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     MPI_Bcast(flux_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     MPI_Bcast(err_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
  
-    time_media = (time_data[0] + time_data[ndata-1])/2.0;
-    time_cad_min = time_media;
+    time_media = (time_data[ndata-1] + time_data[0])/2.0;
+    time_cad_min = (time_data[ndata-1] - time_data[0])/2.0;
     flux_data_min = flux_data_max = flux_data[0];
     flux_mean = flux_data[0];
     for(i=1; i<ndata; i++)
@@ -375,10 +389,21 @@ int recon_init()
     Tmax = time_data[ndata-1] + 0.5*(V-1.0)*Tall;
     Tall = Tmax - Tmin;
   
-    DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
-    nd_sim = Tall/DT + 1;
+    //DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
+    DT = time_cad_min/W;
+    nd_sim = ceil(Tall/DT) + 1;
     nd_sim = (nd_sim/2) * 2; //make sure it is an even number.
-    printf("%d\n", nd_sim);
+
+    if(thistask == roottask)
+    {
+      printf("N=%d, DT=%f, Tall=%f\n", nd_sim, DT, Tall);
+
+      fprintf(finfo, "N=%d, DT=%f, Tall=%f\n", nd_sim, DT, Tall);
+      fprintf(finfo, "time media: %f\n", time_media);
+      fprintf(finfo, "flux mean: %f\n", flux_mean);
+      fprintf(finfo, "flux scale:%f\n", flux_scale);
+      fprintf(finfo, "min. data cad.: %f\n", time_cad_min);
+    }
 
     freq_limit_data = 1.0/(time_data[ndata-1] - time_data[0]);
     freq_limit_sim = 1.0e-3;
@@ -458,6 +483,12 @@ int recon_init()
 
   perturb_accept = malloc(num_particles * sizeof(int));
   
+
+  if(thistask == roottask)
+  {
+    fclose(finfo);
+  }
+
   return 0;
 }
 
@@ -530,7 +561,7 @@ int genlc(const void *model)
   for(i=0; i<nd_sim; i++)
   {
     //printf("%f\n", flux_workspace[i]);
-    time_sim[i] = (i - nd_sim/2) * DT  + time_media;
+    time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
     flux_sim[i] = flux_sim[i]/sqrt(nd_sim);
   }
 
@@ -852,9 +883,9 @@ double psd_drw(double fk, double *arg)
 {
   double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
 
-  if(fk < freq_limit_sim)
-    return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
-  else
+  //if(fk < freq_limit_sim)
+  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
+  //else
     return A/(1.0 + pow(fk/fknee, 2.0));// + cnoise;
 }
 
@@ -871,7 +902,7 @@ double psd_power_law(double fk, double *arg)
 void sim()
 {
   FILE *fp;
-  int i;
+  int i, i1, i2;
   void *model;
   double *pm;
   char fname[200];
@@ -905,13 +936,39 @@ void sim()
     printf("Cannot open file fname.\n");
     exit(0);
   }
+  
+  i1 = nd_sim/2 - nd_sim/V/2;
+  i2 = nd_sim/2 + nd_sim/V/2;
+  for(i=i1; i<i2; i=i+W)
+  {
+    if(gsl_rng_uniform(gsl_r) > parset.fbad)
+    {
+      fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], 0.1);
+    }
+  }
+  fclose(fp);
 
-  for(i=0; i<nd_sim; i++)
+  sprintf(fname, "%s/%s_all", parset.file_dir, parset.file_sim);
+  fp = fopen(fname, "w");
+  if(fp==NULL)
+  {
+    printf("Cannot open file fname.\n");
+    exit(0);
+  }
+  
+  i1 = nd_sim/2 - nd_sim/V/2;
+  i2 = nd_sim/2 + nd_sim/V/2;
+  for(i=i1; i<i2; i=i+W)
   {
     fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], 0.1);
   }
-  
   fclose(fp);
+  
+  free(model);
+  gsl_rng_free(gsl_r);
+
+  return;
+
 }
 
 void test()
@@ -948,6 +1005,6 @@ void test()
   }
 
   free(model);
-
+  gsl_rng_free(gsl_r);
   return;
 }

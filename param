@@ -2,7 +2,7 @@
 # lines beginning with '#' are regarded as comments and are neglected
 # 
 
-PSDType    1                # psd type
+PSDType    0                # psd type
 
 #===============================================
 # data 
@@ -11,17 +11,18 @@ FileDir    .               # file direcotry
 
 FileName   data/sim.txt     # file name
 
-V          1.2              # factor for extension of time interval in term of data
-W          1.0              # factor for time resolution in terms of data  
+V          10.0              # factor for extension of time interval in term of data
+W          10.0              # factor for time resolution in terms of data  
 
 #===============================================
-# only for simulation (-g option)
+# only for simulation (-g option turned on)
 
 FileSim   data/sim.txt      #
-ND_Sim    1000              # number of points
+ND_Sim    100               # number of points
 DT        2.0               # time resolution
+FBad      0.0               # fraction of bad points
 
-#PSDArg   1.0:2.0:0.0       # psd argument, type 0:  A:alpha:noise
-PSDArg   1.0e3:1.0e-3:0.0  # psd argument, type 1: A:fknee:noise                         
+PSDArg   0.1:2.0:0.0       # psd argument, type 0:  A:alpha:noise
+#PSDArg   1.0e3:1.0e-2:0.0  # psd argument, type 1: A:fknee:noise                         
 
 #===============================================

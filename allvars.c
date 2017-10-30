@@ -48,3 +48,5 @@ int flag_help;
 int flag_end;
 
 PARSET parset;
+
+FILE *finfo;
