@@ -9,10 +9,10 @@ PSDType    0                # psd type
 
 FileDir    .               # file direcotry
 
-FileName   data/sim.txt     # file name
+FileName   data/test.txt     # file name
 
-V          10.0              # factor for extension of time interval in term of data
-W          10.0              # factor for time resolution in terms of data  
+V          2.0              # factor for extension of time interval in term of data
+W          1.0              # factor for time resolution in terms of data  
 
 #===============================================
 # only for simulation (-g option turned on)

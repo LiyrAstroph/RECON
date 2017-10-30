@@ -133,7 +133,6 @@ int main(int argc, char **argv)
     recon();
   }
   
-  MPI_Finalize();
 
   if(thistask == roottask)
   {
@@ -146,5 +145,7 @@ int main(int argc, char **argv)
     printf("Ends successfully.\n");
     printf("===============RECON==================\n");
   }
+
+  MPI_Finalize();
   return 0;
 }
