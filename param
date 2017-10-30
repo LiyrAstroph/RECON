@@ -18,9 +18,10 @@ W          10.0              # factor for time resolution in terms of data
 # only for simulation (-g option turned on)
 
 FileSim   data/sim.txt      #
-ND_Sim    100               # number of points
+ND_Sim    50                # number of points
 DT        2.0               # time resolution
 FBad      0.0               # fraction of bad points
+FErr      0.1               # measurement noise
 
 PSDArg   0.1:2.0:0.0       # psd argument, type 0:  A:alpha:noise
 #PSDArg   1.0e3:1.0e-2:0.0  # psd argument, type 1: A:fknee:noise                         

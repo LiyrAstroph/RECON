@@ -65,7 +65,7 @@ typedef struct
   double V, W;
 
   int psd_type, num_params_psd;
-  double fbad;
+  double fbad, ferr;
   char str_psd_arg[200];
   double psd_arg[20];  // maximal number of arguments is 20.
 

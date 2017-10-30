@@ -29,6 +29,7 @@ int resample(double *t, double *f, int n, double *ts, double *fs);
 double second();
 double timediff(double t0, double t1);
 void get_hms(double dt, int *h, int *m, double *s);
+int remove_restart_file();
 
 /* functions */
 void from_prior_recon(void *model);

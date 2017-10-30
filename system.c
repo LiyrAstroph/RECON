@@ -13,9 +13,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <dirent.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <signal.h>
+#include <string.h>
 #include <mpi.h>
 #include <math.h>
 
@@ -61,4 +63,36 @@ void get_hms(double dt, int *h, int *m, double *s)
 	*m = (int) floor((dt - (*h)*3600)/60);
   *s = dt - (*h)*3600 - (*m)*60;
   return;
+}
+
+
+int remove_restart_file()
+{
+  struct dirent *rdf;
+  DIR *rd;
+  char dstr[200];
+
+  sprintf(dstr, "%s/data/", parset.file_dir);
+  rd = opendir(dstr);
+
+  if(rd == NULL)
+  {
+    printf("Cannot open directory %s.\n", dstr);
+    exit(0);
+  }
+
+  while ((rdf = readdir(rd)) != NULL) 
+  {
+    if(strncmp(rdf->d_name, "restart_dnest.txt_", strlen("restart_dnest.txt_"))==0)
+    {
+      sprintf(dstr, "%s/data/%s", parset.file_dir, rdf->d_name);
+
+      if(remove(dstr)!=0)
+      {
+        printf("Cannot remove file %s.\n", dstr);
+      }
+    }
+  }
+  closedir(rd);
+  return 0;
 }

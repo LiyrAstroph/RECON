@@ -65,6 +65,10 @@ void read_parset()
     strcpy(tag[nt], "FBad");
     addr[nt] = &parset.fbad;
     id[nt++] = DOUBLE;
+
+    strcpy(tag[nt], "FErr");
+    addr[nt] = &parset.ferr;
+    id[nt++] = DOUBLE;
     
     char fname[200];
     sprintf(fname, "%s", parset.param_file);

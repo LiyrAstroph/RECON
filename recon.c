@@ -32,6 +32,14 @@ int recon()
   strcpy(argv[argc++], "-s");
   strcpy(argv[argc++], "data/restart_dnest.txt");
 
+  if(flag_restart == 1)
+  {
+    strcpy(argv[argc++], "-r");
+    strcpy(argv[argc], parset.file_dir);
+    strcat(argv[argc], "/");
+    strcat(argv[argc++], "data/restart_dnest.txt");
+  }
+
   if(flag_postprc == 1)
   {
     strcpy(argv[argc++], "-p");
@@ -487,6 +495,11 @@ int recon_init()
   if(thistask == roottask)
   {
     fclose(finfo);
+    
+    if(flag_restart == 0)
+    {
+      remove_restart_file(); /* remove restart file. */
+    }
   }
 
   return 0;
@@ -943,7 +956,7 @@ void sim()
   {
     if(gsl_rng_uniform(gsl_r) > parset.fbad)
     {
-      fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], 0.1);
+      fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], parset.ferr);
     }
   }
   fclose(fp);
@@ -960,7 +973,7 @@ void sim()
   i2 = nd_sim/2 + nd_sim/V/2;
   for(i=i1; i<i2; i=i+W)
   {
-    fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], 0.1);
+    fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i] + parset.ferr*gsl_ran_gaussian(gsl_r, 1.0), parset.ferr);
   }
   fclose(fp);
   
