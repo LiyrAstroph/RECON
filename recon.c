@@ -17,13 +17,13 @@
 
 int recon()
 {
-  int i, argc=0;
+  int i, argc=0, narg=9;
   char **argv;
   
   strcpy(options_file, "OPTIONS");
 
-  argv = malloc(8*sizeof(char *));
-  for(i=0; i<8; i++)
+  argv = malloc(narg*sizeof(char *));
+  for(i=0; i<narg; i++)
   {
     argv[i] = malloc(200*sizeof(char));
   }
@@ -52,6 +52,10 @@ int recon()
   {
     strcpy(argv[argc++], "-c");
   }
+  if(recon_flag_limits == 1)
+  {
+    strcpy(argv[argc++], "-l");
+  }
 
   recon_init();
   
@@ -70,7 +74,7 @@ int recon()
   
   recon_end();
 
-  for(i=0; i<8; i++)
+  for(i=0; i<narg; i++)
     free(argv[i]);
   free(argv);
   
@@ -682,7 +686,11 @@ double perturb_recon(void *model)
   which_parameter_update = which;
 
   /* level-dependent width */
-  if(recon_flag_limits==1)
+  if(recon_flag_limits==0)
+  {
+    width = ( par_range_model[which][1] - par_range_model[which][0] );
+  }
+  else
   {
     which_level_update = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
     which_level_update = which_level_update <0?0:which_level_update;
@@ -698,10 +706,7 @@ double perturb_recon(void *model)
       width = ( par_range_model[which][1] - par_range_model[which][0] );
     }
   }
-  else
-  {
-    width = ( par_range_model[which][1] - par_range_model[which][0] );
-  }
+  
 
   //width = ( par_range_model[which][1] - par_range_model[which][0] );
   

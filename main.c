@@ -40,8 +40,9 @@ int main(int argc, char **argv)
     recon_flag_temp = 0;
     recon_flag_sim = 0;
     recon_flag_end = 0;
+    recon_flag_limits=0;
 
-    while( (opt = getopt(argc, argv, "pgt:rch")) != -1)
+    while( (opt = getopt(argc, argv, "pgt:rchl")) != -1)
     {
       switch(opt)
       {
@@ -77,6 +78,11 @@ int main(int argc, char **argv)
         case 'c': 
           printf("# Recalculate the sample info.\n");
           recon_flag_sample_info = 1;
+          break;
+
+        case 'l':
+          recon_flag_limits = 1;
+          //printf("# level-dependent sampling.\n");
           break;
 
         case 'h':
@@ -115,6 +121,7 @@ int main(int argc, char **argv)
   MPI_Bcast(&recon_flag_sample_info, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&recon_flag_help, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&recon_flag_end, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_limits, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
   if(recon_flag_end == 1 && recon_flag_help == 0 )
   {
