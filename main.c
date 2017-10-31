@@ -14,7 +14,7 @@
 int main(int argc, char **argv)
 {
   int opt;
-  double t0, t1, dt;
+  double t0=0.0, t1=0.0, dt;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &thistask);
   MPI_Comm_size(MPI_COMM_WORLD, &totaltask);
@@ -111,6 +111,7 @@ int main(int argc, char **argv)
   MPI_Bcast(&flag_postprc, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_restart, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_temp, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&temperature, 1, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_sample_info, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_help, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&flag_end, 1, MPI_INT, roottask, MPI_COMM_WORLD);

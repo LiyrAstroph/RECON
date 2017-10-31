@@ -120,6 +120,18 @@ void read_parset()
       }
     }
     fclose(fparam);
+
+    if(parset.V < 1.0)
+    {
+      printf("Incorrect V=%f.\n V should be larger than 1.\n", parset.V);
+      exit(0);
+    }
+
+    if(parset.W < 1.0)
+    {
+      printf("Incorrect W=%f.\n V should be larger than 1.\n", parset.V);
+      exit(0);
+    }
   }
   
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
