@@ -47,14 +47,15 @@ extern unsigned long long int which_mcmc_steps;
 extern int *perturb_accept;
 extern double *limits;
 
-extern int flag_postprc; 
-extern double temperature;
-extern int flag_restart;
-extern int flag_sample_info;
-extern int flag_temp;
-extern int flag_sim;
-extern int flag_help;
-extern int flag_end;
+extern int recon_flag_postprc; 
+extern double recon_temperature;
+extern int recon_flag_restart;
+extern int recon_flag_sample_info;
+extern int recon_flag_temp;
+extern int recon_flag_sim;
+extern int recon_flag_help;
+extern int recon_flag_end;
+extern int recon_flag_limits;
 
 typedef struct
 {

@@ -32,7 +32,7 @@ int recon()
   strcpy(argv[argc++], "-s");
   strcpy(argv[argc++], "data/restart_dnest.txt");
 
-  if(flag_restart == 1)
+  if(recon_flag_restart == 1)
   {
     strcpy(argv[argc++], "-r");
     strcpy(argv[argc], parset.file_dir);
@@ -40,22 +40,22 @@ int recon()
     strcat(argv[argc++], "data/restart_dnest.txt");
   }
 
-  if(flag_postprc == 1)
+  if(recon_flag_postprc == 1)
   {
     strcpy(argv[argc++], "-p");
   }
-  if(flag_temp == 1)
+  if(recon_flag_temp == 1)
   {
-    sprintf(argv[argc++], "-t%f", temperature);
+    sprintf(argv[argc++], "-t%f", recon_temperature);
   }
-  if(flag_sample_info == 1)
+  if(recon_flag_sample_info == 1)
   {
     strcpy(argv[argc++], "-c");
   }
 
   recon_init();
   
-  if(flag_sim == 1)
+  if(recon_flag_sim == 1)
   {
     if(thistask == roottask)
     {
@@ -229,7 +229,7 @@ int recon_init()
         psdfunc = psd_power_law;
         parset.num_params_psd = 3;
 
-        if(flag_sim == 1)
+        if(recon_flag_sim == 1)
         {
           sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
         
@@ -264,7 +264,7 @@ int recon_init()
         psdfunc = psd_drw;
         parset.num_params_psd = 3;
 
-        if(flag_sim == 1)
+        if(recon_flag_sim == 1)
         {
           sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
 
@@ -308,7 +308,7 @@ int recon_init()
       default:
         psdfunc = psd_power_law;
         parset.num_params_psd = 3;
-        if(flag_sim == 1)
+        if(recon_flag_sim == 1)
         {
           parset.psd_arg[0] = log(1.0e0);
           parset.psd_arg[1] = 1.5;
@@ -330,7 +330,7 @@ int recon_init()
   MPI_Bcast(parset.psd_arg, parset.num_params_psd, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
 
   /* fft */
-  if(flag_sim==1)
+  if(recon_flag_sim==1)
   {
     V = 10;
     W = 10;
@@ -501,7 +501,7 @@ int recon_init()
   {
     fclose(finfo);
     
-    if(flag_restart == 0)
+    if(recon_flag_restart == 0)
     {
       remove_restart_file(); /* remove restart file. */
     }
@@ -682,14 +682,21 @@ double perturb_recon(void *model)
   which_parameter_update = which;
 
   /* level-dependent width */
-  which_level_update = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
-  which_level_update = which_level_update <0?0:which_level_update;
-
-  if( which_level_update != 0)
+  if(recon_flag_limits==1)
   {
-    limit1 = limits[(which_level_update-1) * num_params *2 + which *2];
-    limit2 = limits[(which_level_update-1) * num_params *2 + which *2 + 1];
-    width = limit2 - limit1;
+    which_level_update = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
+    which_level_update = which_level_update <0?0:which_level_update;
+
+    if( which_level_update != 0)
+    {
+      limit1 = limits[(which_level_update-1) * num_params *2 + which *2];
+      limit2 = limits[(which_level_update-1) * num_params *2 + which *2 + 1];
+      width = limit2 - limit1;
+    }
+    else
+    {
+      width = ( par_range_model[which][1] - par_range_model[which][0] );
+    }
   }
   else
   {

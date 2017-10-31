@@ -38,14 +38,15 @@ unsigned long long int which_mcmc_steps;
 int *perturb_accept;
 
 
-int flag_postprc; 
-double temperature;
-int flag_restart;
-int flag_sample_info;
-int flag_temp;
-int flag_sim;
-int flag_help;
-int flag_end;
+int recon_flag_postprc; 
+double recon_temperature;
+int recon_flag_restart;
+int recon_flag_sample_info;
+int recon_flag_temp;
+int recon_flag_sim;
+int recon_flag_help;
+int recon_flag_end;
+int recon_flag_limits;
 
 PARSET parset;
 

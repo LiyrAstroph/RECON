@@ -33,54 +33,54 @@ int main(int argc, char **argv)
   {
     opterr = 0;
     optind = 0; // reset getopt. 
-    flag_postprc = 0; /* default value, 0 means postprocessing after runing MCMC sampling. */
-    temperature = 1.0; /* default value */
-    flag_restart = 0;
-    flag_sample_info = 0;
-    flag_temp = 0;
-    flag_sim = 0;
-    flag_end = 0;
+    recon_flag_postprc = 0; /* default value, 0 means postprocessing after runing MCMC sampling. */
+    recon_temperature = 1.0; /* default value */
+    recon_flag_restart = 0;
+    recon_flag_sample_info = 0;
+    recon_flag_temp = 0;
+    recon_flag_sim = 0;
+    recon_flag_end = 0;
 
     while( (opt = getopt(argc, argv, "pgt:rch")) != -1)
     {
       switch(opt)
       {
         case 'p':  /* only do postprocessing */
-          flag_postprc = 1;
-          temperature = 1.0;
+          recon_flag_postprc = 1;
+          recon_temperature = 1.0;
           printf("# MCMC samples available, only do post-processing.\n");
           break;
         case 'g':  /* generate mock light curve */
-          flag_sim = 1;
+          recon_flag_sim = 1;
           printf("# generate mock time series.\n");
           break;
         case 't': /* temperature for postprocessing */
-          flag_temp = 1;
-          temperature = atof(optarg);
-          printf("# Set a temperature %f.\n", temperature);
-          if(temperature == 0.0)
+          recon_flag_temp = 1;
+          recon_temperature = atof(optarg);
+          printf("# Set a temperature %f.\n", recon_temperature);
+          if(recon_temperature == 0.0)
           {
             printf("# Incorrect option -t %s.\n", optarg);
             exit(0);
           }
-          if(temperature < 1.0)
+          if(recon_temperature < 1.0)
           {
             printf("# Temperature should >= 1.0\n");
             exit(0);
           }
           break;
         case 'r':   /* restart */
-          flag_restart = 1;
+          recon_flag_restart = 1;
           printf("# Restart run.\n");
           break;
 
         case 'c': 
           printf("# Recalculate the sample info.\n");
-          flag_sample_info = 1;
+          recon_flag_sample_info = 1;
           break;
 
         case 'h':
-          flag_help = 1;
+          recon_flag_help = 1;
           print_help();
           break;
 
@@ -94,29 +94,29 @@ int main(int argc, char **argv)
       }
     }
 
-    if(flag_help == 0) // not only print help.
+    if(recon_flag_help == 0) // not only print help.
     {
       if(argv[optind] != NULL) // parameter file is specified 
         strcpy(parset.param_file, argv[optind]); /* copy input parameter file */
       else
       {
-        flag_end = 1;
+        recon_flag_end = 1;
         fprintf(stderr, "# Error: No parameter file specified!\n");
       }
     }
   }
 
   /* broadcast flags */
-  MPI_Bcast(&flag_sim, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&flag_postprc, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&flag_restart, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&flag_temp, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&temperature, 1, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&flag_sample_info, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&flag_help, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&flag_end, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_sim, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_postprc, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_restart, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_temp, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_temperature, 1, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_sample_info, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_help, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_end, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
-  if(flag_end == 1 && flag_help == 0 )
+  if(recon_flag_end == 1 && recon_flag_help == 0 )
   {
     if(thistask == roottask)
     {
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
   }
 
   /* run the code */
-  if(flag_help == 0)
+  if(recon_flag_help == 0)
   {
     read_parset();
     recon();
