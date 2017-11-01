@@ -366,12 +366,17 @@ int recon_init()
       read_data(fname, ndata, time_data, flux_data, err_data);
 
       psddata_cal();
+
+      time_cad_cal();
     }
  
     MPI_Bcast(time_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     MPI_Bcast(flux_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     MPI_Bcast(err_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
- 
+    
+    MPI_Bcast(&time_cad_media, 1, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+    
+
     time_media = (time_data[ndata-1] + time_data[0])/2.0;
     time_cad_min = (time_data[ndata-1] - time_data[0])/2.0;
     flux_data_min = flux_data_max = flux_data[0];
@@ -406,8 +411,9 @@ int recon_init()
     Tmax = time_data[ndata-1] + 0.5*(V-1.0)*Tall;
     Tall = Tmax - Tmin;
   
-    DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
+    //DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
     //DT = time_cad_min/W;
+    DT = time_cad_media/W;
     nd_sim = ceil(Tall/DT) + 1;
     nd_sim = (nd_sim/2) * 2; //make sure it is an even number.
 
@@ -420,6 +426,8 @@ int recon_init()
       fprintf(finfo, "flux mean: %f\n", flux_mean);
       fprintf(finfo, "flux scale:%f\n", flux_scale);
       fprintf(finfo, "min. data cad.: %f\n", time_cad_min);
+      fprintf(finfo, "med. data cad.: %f\n", time_cad_media);
+      fprintf(finfo, "mean data cad.: %f\n", (time_data[ndata-1] - time_data[0])/(ndata -1));
     }
 
     freq_limit_data = 1.0/(time_data[ndata-1] - time_data[0]);
@@ -927,6 +935,32 @@ double psd_power_law(double fk, double *arg)
     return A*pow(freq_limit_sim, -alpha);
   else
     return A * pow(fk, -alpha);
+}
+
+void time_cad_cal()
+{
+  int i;
+  double *cad;
+  cad = malloc((ndata -1)*sizeof(double));
+
+  for(i=0; i<ndata-1; i++)
+    cad[i] = time_data[i+1] - time_data[i];
+  
+  qsort(cad, ndata-1, sizeof(double), recon_cmp);
+
+  if(ndata<2)
+    time_cad_media = cad[0];
+  else
+    time_cad_media = cad[ndata/2-1];
+
+  free(cad);
+
+  return;
+}
+
+int recon_cmp(const void *a, const void *b)
+{
+  return *(double *)a > *(double *)b?1:-1;
 }
 
 void sim()

@@ -18,6 +18,8 @@ int recon_postproc();
 void sim();
 void print_help();
 void read_parset();
+void time_cad_cal();
+int recon_cmp(const void *a, const void *b);
 
 /* psd */
 int psddata_cal();
