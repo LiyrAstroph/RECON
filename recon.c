@@ -406,8 +406,8 @@ int recon_init()
     Tmax = time_data[ndata-1] + 0.5*(V-1.0)*Tall;
     Tall = Tmax - Tmin;
   
-    //DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
-    DT = time_cad_min/W;
+    DT = (time_data[ndata-1] - time_data[0])/(ndata -1)/W;
+    //DT = time_cad_min/W;
     nd_sim = ceil(Tall/DT) + 1;
     nd_sim = (nd_sim/2) * 2; //make sure it is an even number.
 
@@ -894,14 +894,14 @@ void set_par_range()
 
   // variability parameters
 
-  for(i=0; i<num_params_psd; i++)
+  for(i=0; i<num_params_psd+1; i++)
   {
     par_range_model[i][0] = var_range_model[i][0];
     par_range_model[i][1] = var_range_model[i][1];
   }
 
   // continuum light curve parameters
-  for(i=num_params_psd; i<num_params; i++)
+  for(i=num_params_psd+1; i<num_params; i++)
   {
     par_range_model[i][0] = var_range_model[num_params_psd][0];
     par_range_model[i][1] = var_range_model[num_params_psd][1];
