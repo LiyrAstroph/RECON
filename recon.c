@@ -971,6 +971,7 @@ void sim()
   i2 = nd_sim/2 + nd_sim/V/2;
   for(i=i1; i<i2; i=i+W)
   {
+    flux_sim[i] += parset.ferr*gsl_ran_gaussian(gsl_r, 1.0);
     if(gsl_rng_uniform(gsl_r) > parset.fbad)
     {
       fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], parset.ferr);
@@ -990,7 +991,7 @@ void sim()
   i2 = nd_sim/2 + nd_sim/V/2;
   for(i=i1; i<i2; i=i+W)
   {
-    fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i] + parset.ferr*gsl_ran_gaussian(gsl_r, 1.0), parset.ferr);
+    fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], parset.ferr);
   }
   fclose(fp);
   
