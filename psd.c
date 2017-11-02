@@ -86,8 +86,7 @@ int psd_fft(double *t, double *f, int n, double *freq, double *psd, int *nf)
 
     // normalize
     psd[i-1] /= n;
-    //psd[i-1] *= 2.0*(t[n-1] - t[0])/n;
-    //psd[i-1] *=  2.0 * (t[n-1] - t[0])/(mean*mean * n*n);
+    psd[i-1] = psd[i-1] * 2.0 * (ttemp[n-1] - ttemp[0])/n;
   }
 
   fftw_destroy_plan(ppsd);

@@ -592,7 +592,9 @@ int genlc(const void *model)
   {
     //printf("%f\n", flux_workspace[i]);
     time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
-    flux_sim[i] = flux_sim[i]/sqrt(nd_sim);
+
+    // normalization factor in line with the continuous transform
+    flux_sim[i] = flux_sim[i]/sqrt(nd_sim) * sqrt(nd_sim/(2 *nd_sim * DT));
   }
 
   free(arg);
