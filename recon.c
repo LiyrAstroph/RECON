@@ -86,7 +86,7 @@ int recon_postproc()
 {
   if(thistask == roottask)
   {
-    int num_ps, i, j;
+    int num_ps, i, j, i1, i2;
     char fname[200];
     void *posterior_sample, *post_model;
     FILE *fp, *fcon, *fcon_all, *fcon_mean;
@@ -159,11 +159,13 @@ int recon_postproc()
         err_sim_mean[j] += flux_sim[j]*flux_sim[j];
       }
 
-      for(j=0; j<ndata; j++)
+      i1 = ceil((time_data[0] - 0.2*(time_data[ndata-1] - time_data[0]) - time_sim[0])/DT);
+      i2 = ceil((time_data[ndata-1]  + 0.2*(time_data[ndata-1] - time_data[0]) - time_sim[0])/DT);
+      for(j=i1; j<i2; j++)
       {
-        flux_data_sim[j] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[j], gsl_acc_sim);
+        //flux_data_sim[j] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[j], gsl_acc_sim);
 
-        fprintf(fcon, "%f  %f\n", time_data[j], flux_data_sim[j]*flux_scale+flux_mean);
+        fprintf(fcon, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale+flux_mean);
       }
       fprintf(fcon, "\n");
 
