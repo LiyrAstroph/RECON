@@ -454,13 +454,13 @@ int recon_init()
   
   switch(parset.psd_type)
   {
-    case 0:
+    case 0:   // single power-law
       var_range_model[i][0] = 0.0;
       var_range_model[i++][1] = 5.0;
       break;
 
-    case 1:
-      var_range_model[i][0] = log(freq_limit_data);
+    case 1:   // damped random walk
+      var_range_model[i][0] = log(freq_limit_data/(2.0*PI));
       var_range_model[i++][1] = log(1.0e0);
       break;
 
