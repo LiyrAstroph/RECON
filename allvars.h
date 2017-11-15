@@ -1,3 +1,10 @@
+/*
+ * RECON Copyright (C) 2018 Yan-Rong Li
+ * A package for measuring spectral power and reconstructing time series in AGN.
+ * 
+ * Yan-Rong Li, liyanrong@mail.ihep.ac.cn
+ * 
+ */
 
 #ifndef _ALLVARS_H
 #define _ALLVARS_H

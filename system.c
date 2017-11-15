@@ -1,8 +1,9 @@
 /*
- * BRAINS
- * (B)LR (R)everberation-mapping (A)nalysis (I)ntegrated with (N)ested (S)ampling
- * Yan-Rong Li, liyanrong@ihep.ac.cn
- * Thu, Aug 4, 2016
+ * RECON Copyright (C) 2018 Yan-Rong Li
+ * A package for measuring spectral power and reconstructing time series in AGN.
+ * 
+ * Yan-Rong Li, liyanrong@mail.ihep.ac.cn
+ * 
  */
 
 /*!

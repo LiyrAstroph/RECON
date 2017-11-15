@@ -1,3 +1,11 @@
+/*
+ * RECON Copyright (C) 2018 Yan-Rong Li
+ * A package for measuring spectral power and reconstructing time series in AGN.
+ * 
+ * Yan-Rong Li, liyanrong@mail.ihep.ac.cn
+ * 
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +15,10 @@
 #include "proto.h"
 #include "allvars.h"
 
+
+/*!
+ *  This function calculates PSD for data.
+ */
 int psddata_cal()
 {
   FILE *fp;
