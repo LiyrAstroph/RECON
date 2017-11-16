@@ -27,7 +27,7 @@ extern int ndata;
 extern double *flux_data, *time_data, *err_data;
 extern double time_media, time_cad_min, time_cad_media, flux_data_min, flux_data_max, flux_scale, flux_mean;
 
-extern double freq_limit_sim, freq_limit_data;
+extern double freq_limit_data;
 
 extern int nd_sim;
 extern double DT, V, W;
@@ -71,6 +71,7 @@ typedef struct
   char file_name[200];
 
   double V, W;
+  double freq_limit;
 
   int psd_type, num_params_psd;
   double fbad, ferr;

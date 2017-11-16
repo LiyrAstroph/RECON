@@ -352,7 +352,6 @@ int recon_init()
     nd_sim = parset.nd_sim * W * V;
     
     freq_limit_data = 1.0/(nd_sim * DT/W);
-    freq_limit_sim = 1.0e-3;
   }
   else
   {
@@ -440,7 +439,6 @@ int recon_init()
     }
 
     freq_limit_data = 1.0/(time_data[ndata-1] - time_data[0]);
-    freq_limit_sim = 1.0e-3;
   }
   
   num_recon = nd_sim;
@@ -942,8 +940,8 @@ double psd_power_law(double fk, double *arg)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
 
-  if(fk < freq_limit_sim)
-    return A*pow(freq_limit_sim, -alpha);
+  if(fk < parset.freq_limit)
+    return A*pow(parset.freq_limit, -alpha);
   else
     return A * pow(fk, -alpha);
 }

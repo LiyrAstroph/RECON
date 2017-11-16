@@ -50,6 +50,10 @@ void read_parset()
     addr[nt] = &parset.W;
     id[nt++] = DOUBLE;
 
+    strcpy(tag[nt], "FreqLimit");
+    addr[nt] = &parset.freq_limit;
+    id[nt++] = DOUBLE;
+
     strcpy(tag[nt], "PSDType");
     addr[nt] = &parset.psd_type;
     id[nt++] = INT;
@@ -138,6 +142,12 @@ void read_parset()
     if(parset.W < 1.0)
     {
       printf("Incorrect W=%f.\n V should be larger than 1.\n", parset.V);
+      exit(0);
+    }
+
+    if(parset.freq_limit <=0.0)
+    {
+      printf("Incorrect freq_limit=%f\n freq_limit should be positive.\n", parset.freq_limit);
       exit(0);
     }
   }
