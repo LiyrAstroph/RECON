@@ -317,7 +317,24 @@ int recon_init()
         }
 
         break;
-  
+      
+      case 2:
+        psdfunc = psd_power_law;
+        parset.num_params_psd = 6;
+        if(recon_flag_sim == 1)
+        {
+          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
+                  &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
+
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+          parset.psd_arg[2] = -DBL_MAX;
+          parset.psd_arg[3] = log(parset.psd_arg[3]);
+          parset.psd_arg[4] = log(parset.psd_arg[4]);
+          parset.psd_arg[5] = log(parset.psd_arg[5]);
+
+        }
+        break;
+
       default:
         psdfunc = psd_power_law;
         parset.num_params_psd = 3;
@@ -442,6 +459,9 @@ int recon_init()
   }
   
   num_recon = nd_sim;
+  if(parset.psd_type >= 2)
+    num_recon += nd_sim/2;
+
   num_params_psd = parset.num_params_psd;
 
   num_params = num_recon + num_params_psd;
@@ -469,6 +489,11 @@ int recon_init()
       var_range_model[i++][1] = log(1.0e0);
       break;
 
+    case 2:
+      var_range_model[i][0] = 0.0;
+      var_range_model[i++][1] = 5.0;
+      break;
+
     default:
       var_range_model[i][0] = 0.0;
       var_range_model[i++][1] = 5.0;
@@ -476,6 +501,18 @@ int recon_init()
 
   var_range_model[i][0] = log(1.0e-10);
   var_range_model[i++][1] = log(1.0e3);
+
+  if(parset.psd_type >=2)
+  {
+    var_range_model[i][0] = log(1.0e-10);  //Ap
+    var_range_model[i++][1] = log(1.0e6);
+
+    var_range_model[i][0] = log(freq_limit_data); //center
+    var_range_model[i++][1] = log(1.0e0);
+
+    var_range_model[i][0] = log(1.0e-10);   //sigma
+    var_range_model[i++][1] = log(1.0e6);
+  }
 
   var_range_model[i][0] = -100.0;
   var_range_model[i++][1] = 100.0;
@@ -593,6 +630,16 @@ int genlc(const void *model)
     fft_work[i][1] *= sqrt(psdfunc(freq, arg)/2.0);
   }
 
+  /*if(parset.psd_type >=2)
+  {
+    for(i=1; i<nd_sim/2+1; i++)
+    {
+      freq = i*1.0/(nd_sim * DT);
+      fft_work[i][0] += sqrt(psd_period(freq, arg+num_params_psd-3)) * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += sqrt(psd_period(freq, arg+num_params_psd-3)) * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+    }
+  }*/
+
   fftw_execute(pfft);
 
   for(i=0; i<nd_sim; i++)
@@ -641,8 +688,11 @@ void from_prior_recon(void *model)
     pm[i] = var_range_model[i][0] + dnest_rand()*(par_range_model[i][1] - par_range_model[i][0]);
   }
 
-  for(i=1; i<num_recon; i++)
+  for(i=1; i<nd_sim; i++)
     pm[i+num_params_psd] = dnest_randn();
+
+  for(i=num_params_psd+nd_sim; i<num_params; i++)
+    pm[i] = dnest_rand();
 
   for(i=0; i<num_params; i++)
   {
@@ -732,12 +782,17 @@ double perturb_recon(void *model)
     pm[which] += dnest_randh() * width;
     wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
   }
-  else
+  else if(which < num_params_psd + nd_sim)
   {
     logH -= (-0.5*pow(pm[which], 2.0) );
     pm[which] += dnest_randh() * width;
     wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
     logH += (-0.5*pow(pm[which], 2.0) );
+  }
+  else
+  {
+    pm[which] += dnest_randh() * width;
+    wrap(&(pm[which]), 0.0, 1.0);
   }
 
   return logH;
@@ -918,10 +973,16 @@ void set_par_range()
   }
 
   // continuum light curve parameters
-  for(i=num_params_psd+1; i<num_params; i++)
+  for(i=num_params_psd+1; i<num_params_psd+nd_sim; i++)
   {
     par_range_model[i][0] = var_range_model[num_params_psd][0];
     par_range_model[i][1] = var_range_model[num_params_psd][1];
+  }
+
+  for(i=num_params_psd+nd_sim; i< num_params; i++)
+  {
+    par_range_model[i][0] = 0.0;
+    par_range_model[i][1] = 1.0;
   }
   return;
 }
@@ -944,6 +1005,13 @@ double psd_power_law(double fk, double *arg)
     return A*pow(parset.freq_limit, -alpha);
   else
     return A * pow(fk, -alpha);
+}
+
+double psd_period(double fk, double *arg)
+{
+  double Ap=exp(arg[0]), center=arg[1], sigma=exp(arg[2]);
+
+  return Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (log(fk) - center)/sigma, 2.0 ));
 }
 
 void time_cad_cal()
@@ -990,14 +1058,20 @@ void sim()
   
   pm = (double *)model;
 
-  pm[0] = parset.psd_arg[0];
-  pm[1] = parset.psd_arg[1];
-  pm[2] = parset.psd_arg[2];
-  pm[3] = 0.0;
+  printf("%d\n", num_params_psd);
+
+  memcpy(pm, parset.psd_arg, num_params_psd * sizeof(double));
+
+  pm[parset.num_params_psd] = 0.0;
   
-  for(i=1; i<num_recon; i++)
+  for(i=1; i<nd_sim; i++)
   {
     pm[num_params_psd + i] = gsl_ran_gaussian(gsl_r, 1.0);
+  }
+
+  for(i=num_params_psd+nd_sim; i<num_params; i++)
+  {
+    pm[i] = gsl_rng_uniform(gsl_r);
   }
 
   genlc(model);

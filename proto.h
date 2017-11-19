@@ -21,6 +21,7 @@ void set_par_range();
 double prob_con(const void *model);
 double psd_drw(double fk, double *arg);
 double psd_power_law(double fk, double *arg);
+double psd_period(double fk, double *arg);
 int recon_postproc();
 void sim();
 void print_help();
