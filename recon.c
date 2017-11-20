@@ -630,7 +630,7 @@ int genlc(const void *model)
     fft_work[i][1] *= sqrt(psdfunc(freq, arg)/2.0);
   }
 
-  /*if(parset.psd_type >=2)
+  if(parset.psd_type >=2)
   {
     for(i=1; i<nd_sim/2+1; i++)
     {
@@ -638,7 +638,7 @@ int genlc(const void *model)
       fft_work[i][0] += sqrt(psd_period(freq, arg+num_params_psd-3)) * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
       fft_work[i][1] += sqrt(psd_period(freq, arg+num_params_psd-3)) * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
-  }*/
+  }
 
   fftw_execute(pfft);
 
@@ -1057,8 +1057,6 @@ void sim()
   model = malloc(size_of_modeltype);
   
   pm = (double *)model;
-
-  printf("%d\n", num_params_psd);
 
   memcpy(pm, parset.psd_arg, num_params_psd * sizeof(double));
 

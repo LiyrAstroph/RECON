@@ -150,6 +150,12 @@ void read_parset()
       printf("Incorrect freq_limit=%f\n freq_limit should be positive.\n", parset.freq_limit);
       exit(0);
     }
+
+    if(parset.ferr <=0.0)
+    {
+      printf("#Incorrect ferr=%f\n. ferr should be positive.\n", parset.ferr);
+      exit(0);
+    }
   }
   
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
