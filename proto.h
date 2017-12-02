@@ -20,8 +20,11 @@ int read_data(char *fname, int n, double *t, double *f, double *e);
 void set_par_range();
 double prob_con(const void *model);
 double psd_drw(double fk, double *arg);
+double psd_drw_sqrt(double fk, double *arg);
 double psd_power_law(double fk, double *arg);
+double psd_power_law_sqrt(double fk, double *arg);
 double psd_period(double fk, double *arg);
+double psd_period_sqrt(double fk, double *arg);
 int recon_postproc();
 void sim();
 void print_help();
@@ -65,5 +68,6 @@ int (*get_num_params)();
 void (*restart_clouds)(int iflag);
 
 double (*psdfunc)(double, double *);
+double (*psdfunc_sqrt)(double, double *);
 
 #endif

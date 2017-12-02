@@ -240,6 +240,7 @@ int recon_init()
     {
       case 0:
         psdfunc = psd_power_law;
+        psdfunc_sqrt = psd_power_law_sqrt;
         parset.num_params_psd = 3;
 
         if(recon_flag_sim == 1)
@@ -275,6 +276,7 @@ int recon_init()
   
       case 1:
         psdfunc = psd_drw;
+        psdfunc_sqrt = psd_drw_sqrt;
         parset.num_params_psd = 3;
 
         if(recon_flag_sim == 1)
@@ -320,6 +322,7 @@ int recon_init()
       
       case 2:
         psdfunc = psd_power_law;
+        psdfunc_sqrt = psd_power_law_sqrt;
         parset.num_params_psd = 6;
         if(recon_flag_sim == 1)
         {
@@ -337,6 +340,7 @@ int recon_init()
 
       default:
         psdfunc = psd_power_law;
+        psdfunc_sqrt = psd_power_law_sqrt;
         parset.num_params_psd = 3;
         if(recon_flag_sim == 1)
         {
@@ -356,6 +360,7 @@ int recon_init()
   }
 
   MPI_Bcast(&psdfunc, sizeof(psdfunc), MPI_BYTE, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&psdfunc_sqrt, sizeof(psdfunc_sqrt), MPI_BYTE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&parset.num_params_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(parset.psd_arg, parset.num_params_psd, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
 
@@ -626,8 +631,8 @@ int genlc(const void *model)
   for(i=1; i<nd_sim/2+1; i++)
   {
     freq = i*1.0/(nd_sim * DT);
-    fft_work[i][0] *= sqrt(psdfunc(freq, arg)/2.0);
-    fft_work[i][1] *= sqrt(psdfunc(freq, arg)/2.0);
+    fft_work[i][0] *= psdfunc_sqrt(freq, arg)/sqrt(2.0);
+    fft_work[i][1] *= psdfunc_sqrt(freq, arg)/sqrt(2.0);
   }
 
   if(parset.psd_type >=2)
@@ -635,8 +640,8 @@ int genlc(const void *model)
     for(i=1; i<nd_sim/2+1; i++)
     {
       freq = i*1.0/(nd_sim * DT);
-      fft_work[i][0] += sqrt(psd_period(freq, arg+num_params_psd-3)) * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += sqrt(psd_period(freq, arg+num_params_psd-3)) * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][0] += psd_period_sqrt(freq, arg+num_params_psd-3) * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psd_period_sqrt(freq, arg+num_params_psd-3) * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
   }
 
@@ -997,9 +1002,29 @@ double psd_drw(double fk, double *arg)
     return A/(1.0 + pow(fk/fknee, 2.0));// + cnoise;
 }
 
+double psd_drw_sqrt(double fk, double *arg)
+{
+  double A=exp(arg[0]/2.0), fknee=exp(arg[1]), cnoise = exp(arg[2]);
+
+  //if(fk < freq_limit_sim)
+  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
+  //else
+    return A/sqrt(1.0 + pow(fk/fknee, 2.0));// + cnoise;
+}
+
 double psd_power_law(double fk, double *arg)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
+
+  if(fk < parset.freq_limit)
+    return A*pow(parset.freq_limit, -alpha);
+  else
+    return A * pow(fk, -alpha);
+}
+
+double psd_power_law_sqrt(double fk, double *arg)
+{
+  double A=exp(arg[0]/2.0), alpha=arg[1]/2.0, cnoise=exp(arg[2]);
 
   if(fk < parset.freq_limit)
     return A*pow(parset.freq_limit, -alpha);
@@ -1012,6 +1037,13 @@ double psd_period(double fk, double *arg)
   double Ap=exp(arg[0]), center=arg[1], sigma=exp(arg[2]);
 
   return Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (log(fk) - center)/sigma, 2.0 ));
+}
+
+double psd_period_sqrt(double fk, double *arg)
+{
+  double Ap=exp(arg[0]/2.0), center=arg[1], sigma=exp(arg[2]/2.0);
+
+  return Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.25 * pow( (log(fk) - center)/sigma, 2.0 ));
 }
 
 void time_cad_cal()
