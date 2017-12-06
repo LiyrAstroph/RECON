@@ -611,7 +611,7 @@ int recon_end()
 int genlc(const void *model)
 {
   int i;
-  double *arg, freq;
+  double *arg, freq, psd_sqrt, norm;
   double *pm = (double *)model;
 
   arg = malloc(num_params_psd * sizeof(double));
@@ -631,8 +631,9 @@ int genlc(const void *model)
   for(i=1; i<nd_sim/2+1; i++)
   {
     freq = i*1.0/(nd_sim * DT);
-    fft_work[i][0] *= psdfunc_sqrt(freq, arg)/sqrt(2.0);
-    fft_work[i][1] *= psdfunc_sqrt(freq, arg)/sqrt(2.0);
+    psd_sqrt = psdfunc_sqrt(freq, arg)/sqrt(2.0);
+    fft_work[i][0] *= psd_sqrt;
+    fft_work[i][1] *= psd_sqrt;
   }
 
   if(parset.psd_type >=2)
@@ -640,20 +641,21 @@ int genlc(const void *model)
     for(i=1; i<nd_sim/2+1; i++)
     {
       freq = i*1.0/(nd_sim * DT);
-      fft_work[i][0] += psd_period_sqrt(freq, arg+num_params_psd-3) * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += psd_period_sqrt(freq, arg+num_params_psd-3) * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      psd_sqrt = psd_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
+      fft_work[i][0] += psd_sqrt * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psd_sqrt * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
   }
 
   fftw_execute(pfft);
 
+  // normalization factor in line with the continuous transform
+  norm = 1.0/sqrt(nd_sim) * sqrt(nd_sim/(2.0 *nd_sim * DT));
   for(i=0; i<nd_sim; i++)
   {
     //printf("%f\n", flux_workspace[i]);
     time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
-
-    // normalization factor in line with the continuous transform
-    flux_sim[i] = flux_sim[i]/sqrt(nd_sim) * sqrt(nd_sim/(2 *nd_sim * DT));
+    flux_sim[i] = flux_sim[i] * norm;
   }
 
   free(arg);
