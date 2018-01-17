@@ -50,9 +50,8 @@ void print_particle_recon(FILE *fp, const void *model);
 double log_likelihoods_cal_recon(const void *model);
 double log_likelihoods_cal_initial_recon(const void *model);
 double log_likelihoods_cal_restart_recon(const void *model);
+double log_likelihoods_cal_recon_exam(const void *model);
 double perturb_recon(void *model);
-void copy_model_recon(void *dest, const void *src);
-void* create_model_recon();
 int get_num_params_recon();
 void restart_clouds_recon(int iflag);
 
@@ -62,8 +61,6 @@ double (*log_likelihoods_cal)(const void *model);
 double (*log_likelihoods_cal_initial)(const void *model);
 double (*log_likelihoods_cal_restart)(const void *model);
 double (*perturb)(void *model);
-void (*copy_model)(void *dest, const void *src);
-void* (*create_model)();
 int (*get_num_params)();
 void (*restart_clouds)(int iflag);
 

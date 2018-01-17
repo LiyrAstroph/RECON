@@ -222,13 +222,23 @@ int recon_init()
 
   /* setup functions used for dnest*/
   from_prior = from_prior_recon;
-  log_likelihoods_cal = log_likelihoods_cal_recon;
-  log_likelihoods_cal_initial = log_likelihoods_cal_initial_recon;
-  log_likelihoods_cal_restart = log_likelihoods_cal_restart_recon;
   perturb = perturb_recon;
   print_particle = print_particle_recon;
   get_num_params = get_num_params_recon;
   restart_clouds = restart_clouds_recon;
+
+  if(recon_flag_prior_exam == 0)
+  {
+    log_likelihoods_cal = log_likelihoods_cal_recon;
+    log_likelihoods_cal_initial = log_likelihoods_cal_initial_recon;
+    log_likelihoods_cal_restart = log_likelihoods_cal_restart_recon;
+  }
+  else
+  {
+    log_likelihoods_cal = log_likelihoods_cal_recon_exam;
+    log_likelihoods_cal_initial = log_likelihoods_cal_recon_exam;
+    log_likelihoods_cal_restart = log_likelihoods_cal_recon_exam;
+  }
 
   roottask = 0;
 
@@ -477,23 +487,23 @@ int recon_init()
   }
   i=0;
 
-  var_range_model[i][0] = log(1.0e-10);
+  var_range_model[i][0] = log(1.0e-10); // A
   var_range_model[i++][1] = log(1.0e6);
   
   switch(parset.psd_type)
   {
     case 0:   // single power-law
-      var_range_model[i][0] = 0.0;
+      var_range_model[i][0] = 0.0;  //slope
       var_range_model[i++][1] = 5.0;
       break;
 
     case 1:   // damped random walk
-      var_range_model[i][0] = log(freq_limit_data/(2.0*PI));
+      var_range_model[i][0] = log(freq_limit_data/(2.0*PI)); //characteristic frequency
       var_range_model[i++][1] = log(1.0e0);
       break;
 
     case 2:
-      var_range_model[i][0] = 0.0;
+      var_range_model[i][0] = 0.0;      //slope
       var_range_model[i++][1] = 5.0;
       break;
 
@@ -502,7 +512,7 @@ int recon_init()
       var_range_model[i++][1] = 5.0;
   }
 
-  var_range_model[i][0] = log(1.0e-10);
+  var_range_model[i][0] = log(1.0e-10); //noise
   var_range_model[i++][1] = log(1.0e3);
 
   if(parset.psd_type >=2)
@@ -517,10 +527,10 @@ int recon_init()
     var_range_model[i++][1] = log(1.0e6);
   }
 
-  var_range_model[i][0] = -100.0;
+  var_range_model[i][0] = -100.0;  //zero-frequency power
   var_range_model[i++][1] = 100.0;
 
-  var_range_model[i][0] = -10.0;
+  var_range_model[i][0] = -10.0;  //
   var_range_model[i++][1] = 10.0;
 
   par_range_model = malloc( num_params * sizeof(double *));
@@ -737,6 +747,11 @@ double log_likelihoods_cal_restart_recon(const void *model)
   double logL;
   logL = prob_recon(model);
   return logL;
+}
+
+double log_likelihoods_cal_recon_exam(const void *model)
+{
+  return 0.0;
 }
 
 double perturb_recon(void *model)
