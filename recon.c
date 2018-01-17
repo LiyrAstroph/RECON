@@ -227,8 +227,6 @@ int recon_init()
   log_likelihoods_cal_restart = log_likelihoods_cal_restart_recon;
   perturb = perturb_recon;
   print_particle = print_particle_recon;
-  copy_model = copy_model_recon;
-  create_model = create_model_recon;
   get_num_params = get_num_params_recon;
   restart_clouds = restart_clouds_recon;
 
@@ -744,7 +742,7 @@ double log_likelihoods_cal_restart_recon(const void *model)
 double perturb_recon(void *model)
 {
   double logH=0.0, width, rnd, limit1, limit2;
-  int which;
+  int which, which_level;
   double *pm = (double *)model;
 
   /* sample variability parameters more frequently */
@@ -766,13 +764,12 @@ double perturb_recon(void *model)
   }
   else
   {
-    which_level_update = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
-    which_level_update = which_level_update <0?0:which_level_update;
+    which_level = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
 
-    if( which_level_update != 0)
+    if( which_level > 0)
     {
-      limit1 = limits[(which_level_update-1) * num_params *2 + which *2];
-      limit2 = limits[(which_level_update-1) * num_params *2 + which *2 + 1];
+      limit1 = limits[(which_level-1) * num_params *2 + which *2];
+      limit2 = limits[(which_level-1) * num_params *2 + which *2 + 1];
       width = limit2 - limit1;
     }
     else
@@ -804,16 +801,6 @@ double perturb_recon(void *model)
 
   return logH;
   
-}
-
-void copy_model_recon(void *dest, const void *src)
-{
-  memcpy(dest, src, size_of_modeltype);
-}
-
-void* create_model_recon()
-{
-  return (void *)malloc( size_of_modeltype );
 }
 
 int get_num_params_recon()
@@ -1098,7 +1085,7 @@ void sim()
   
   for(i=1; i<nd_sim; i++)
   {
-    pm[num_params_psd + i] = gsl_ran_gaussian(gsl_r, 1.0);
+    pm[num_params_psd + i] = gsl_ran_ugaussian(gsl_r);
   }
 
   for(i=num_params_psd+nd_sim; i<num_params; i++)
@@ -1120,7 +1107,7 @@ void sim()
   i2 = nd_sim/2 + nd_sim/V/2;
   for(i=i1; i<i2; i=i+W)
   {
-    flux_sim[i] += parset.ferr*gsl_ran_gaussian(gsl_r, 1.0);
+    flux_sim[i] += parset.ferr*gsl_ran_ugaussian(gsl_r);
     if(gsl_rng_uniform(gsl_r) > parset.fbad)
     {
       fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], parset.ferr);
@@ -1174,7 +1161,7 @@ void test()
   
   for(i=1; i<num_recon; i++)
   {
-    pm[num_params_psd + i] = gsl_ran_gaussian(gsl_r, 1.0);
+    pm[num_params_psd + i] = gsl_ran_ugaussian(gsl_r);
   }
 
   genlc(model);
