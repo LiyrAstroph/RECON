@@ -25,6 +25,8 @@ double psd_power_law(double fk, double *arg);
 double psd_power_law_sqrt(double fk, double *arg);
 double psd_period(double fk, double *arg);
 double psd_period_sqrt(double fk, double *arg);
+double psd_bending_power_law(double fk, double *arg);
+double psd_bending_power_law_sqrt(double fk, double *arg);
 int recon_postproc();
 void sim();
 void print_help();

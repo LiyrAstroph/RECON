@@ -206,3 +206,85 @@ int resample(double *t, double *f, int n, double *ts, double *fs)
 
   return 0;
 }
+
+double psd_drw(double fk, double *arg)
+{
+  double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
+
+  //if(fk < freq_limit_sim)
+  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
+  //else
+    return A/(1.0 + pow(fk/fknee, 2.0));// + cnoise;
+}
+
+double psd_drw_sqrt(double fk, double *arg)
+{
+  double A=exp(arg[0]/2.0), fknee=exp(arg[1]), cnoise = exp(arg[2]);
+
+  //if(fk < freq_limit_sim)
+  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
+  //else
+    return A/sqrt(1.0 + pow(fk/fknee, 2.0));// + cnoise;
+}
+
+double psd_power_law(double fk, double *arg)
+{
+  double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
+
+  if(fk < parset.freq_limit)
+    return A*pow(parset.freq_limit, -alpha);
+  else
+    return A * pow(fk, -alpha);
+}
+
+double psd_power_law_sqrt(double fk, double *arg)
+{
+  double A=exp(arg[0]/2.0), alpha=arg[1]/2.0, cnoise=exp(arg[2]);
+
+  if(fk < parset.freq_limit)
+    return A*pow(parset.freq_limit, -alpha);
+  else
+    return A * pow(fk, -alpha);
+}
+
+double psd_bending_power_law(double fk, double *arg)
+{
+  double A=exp(arg[0]), alpha_hi=arg[1], alpha_lo=arg[2];
+  double fc=exp(arg[3]), cnoise=exp(arg[4]);
+
+  if(fk < parset.freq_limit)
+    return A * pow(parset.freq_limit/fc, -alpha_lo);
+
+  if(fk > fc)
+    return A * pow(fk/fc, -alpha_hi);
+  else
+    return A * pow(fk/fc, -alpha_lo);
+}
+
+double psd_bending_power_law_sqrt(double fk, double *arg)
+{
+  double A=exp(arg[0]/2.0), alpha_hi=arg[1]/2.0, alpha_lo=arg[2]/2.0;
+  double fc=exp(arg[3]), cnoise=exp(arg[4]);
+
+  if(fk < parset.freq_limit)
+    return A * pow(parset.freq_limit/fc, -alpha_lo);
+
+  if(fk > fc)
+    return A * pow(fk/fc, -alpha_hi);
+  else
+    return A * pow(fk/fc, -alpha_lo);
+}
+
+double psd_period(double fk, double *arg)
+{
+  double Ap=exp(arg[0]), center=arg[1], sigma=exp(arg[2]);
+
+  return Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (log(fk) - center)/sigma, 2.0 ));
+}
+
+double psd_period_sqrt(double fk, double *arg)
+{
+  double Ap=exp(arg[0]/2.0), center=arg[1], sigma=exp(arg[2]/2.0);
+
+  return Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.25 * pow( (log(fk) - center)/sigma, 2.0 ));
+}

@@ -329,6 +329,53 @@ int recon_init()
         break;
       
       case 2:
+        psdfunc = psd_bending_power_law;
+        psdfunc_sqrt = psd_bending_power_law_sqrt;
+        
+        parset.num_params_psd = 5;
+
+        if(recon_flag_sim == 1)
+        {
+          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
+                                                            &parset.psd_arg[3], &parset.psd_arg[4]);
+
+          if(parset.psd_arg[0] <=0.0)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[0] = log(parset.psd_arg[0]);
+          }
+
+          if(parset.psd_arg[3] <=0.0)
+          {
+            printf("# Incorrect 4th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[3] = log(parset.psd_arg[3]);
+          }
+
+          if(parset.psd_arg[4] < 0.0)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[4] == 0.0)
+          {
+            parset.psd_arg[4] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[4] = log(parset.psd_arg[4]);
+          }
+        }
+        break;
+
+      case 3:
         psdfunc = psd_power_law;
         psdfunc_sqrt = psd_power_law_sqrt;
         parset.num_params_psd = 6;
@@ -472,7 +519,7 @@ int recon_init()
   }
   
   num_recon = nd_sim;
-  if(parset.psd_type >= 2)
+  if(parset.psd_type >= 3)
     num_recon += nd_sim/2;
 
   num_params_psd = parset.num_params_psd;
@@ -501,8 +548,20 @@ int recon_init()
       var_range_model[i][0] = log(freq_limit_data/(2.0*PI)); //characteristic frequency
       var_range_model[i++][1] = log(1.0e0);
       break;
+  
+    case 2:  // bending power-law
+      var_range_model[i][0] = 1.0; //alpha_hi
+      var_range_model[i++][1] = 5.0;
 
-    case 2:
+      var_range_model[i][0] = 0.0; //alpha_lo
+      var_range_model[i++][1] = 1.0;
+
+      var_range_model[i][0] = log(freq_limit_data/(2.0*PI)); //characteristic frequency
+      var_range_model[i++][1] = log(1.0e0);
+
+      break;
+
+    case 3:
       var_range_model[i][0] = 0.0;      //slope
       var_range_model[i++][1] = 5.0;
       break;
@@ -515,7 +574,7 @@ int recon_init()
   var_range_model[i][0] = log(1.0e-10); //noise
   var_range_model[i++][1] = log(1.0e3);
 
-  if(parset.psd_type >=2)
+  if(parset.psd_type >=3)
   {
     var_range_model[i][0] = log(1.0e-10);  //Ap
     var_range_model[i++][1] = log(1.0e6);
@@ -644,7 +703,7 @@ int genlc(const void *model)
     fft_work[i][1] *= psd_sqrt;
   }
 
-  if(parset.psd_type >=2)
+  if(parset.psd_type >=3)
   {
     for(i=1; i<nd_sim/2+1; i++)
     {
@@ -994,60 +1053,6 @@ void set_par_range()
     par_range_model[i][1] = 1.0;
   }
   return;
-}
-
-double psd_drw(double fk, double *arg)
-{
-  double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
-
-  //if(fk < freq_limit_sim)
-  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
-  //else
-    return A/(1.0 + pow(fk/fknee, 2.0));// + cnoise;
-}
-
-double psd_drw_sqrt(double fk, double *arg)
-{
-  double A=exp(arg[0]/2.0), fknee=exp(arg[1]), cnoise = exp(arg[2]);
-
-  //if(fk < freq_limit_sim)
-  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
-  //else
-    return A/sqrt(1.0 + pow(fk/fknee, 2.0));// + cnoise;
-}
-
-double psd_power_law(double fk, double *arg)
-{
-  double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
-
-  if(fk < parset.freq_limit)
-    return A*pow(parset.freq_limit, -alpha);
-  else
-    return A * pow(fk, -alpha);
-}
-
-double psd_power_law_sqrt(double fk, double *arg)
-{
-  double A=exp(arg[0]/2.0), alpha=arg[1]/2.0, cnoise=exp(arg[2]);
-
-  if(fk < parset.freq_limit)
-    return A*pow(parset.freq_limit, -alpha);
-  else
-    return A * pow(fk, -alpha);
-}
-
-double psd_period(double fk, double *arg)
-{
-  double Ap=exp(arg[0]), center=arg[1], sigma=exp(arg[2]);
-
-  return Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (log(fk) - center)/sigma, 2.0 ));
-}
-
-double psd_period_sqrt(double fk, double *arg)
-{
-  double Ap=exp(arg[0]/2.0), center=arg[1], sigma=exp(arg[2]/2.0);
-
-  return Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.25 * pow( (log(fk) - center)/sigma, 2.0 ));
 }
 
 void time_cad_cal()
