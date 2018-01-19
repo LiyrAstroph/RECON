@@ -249,7 +249,7 @@ double psd_power_law_sqrt(double fk, double *arg)
 
 double psd_bending_power_law(double fk, double *arg)
 {
-  double A=exp(arg[0]), alpha_hi=arg[1], alpha_lo=arg[2];
+  double A=exp(arg[0]), alpha_hi=arg[1], alpha_lo=(arg[1] - arg[2]);
   double fc=exp(arg[3]), cnoise=exp(arg[4]);
 
   if(fk < parset.freq_limit)
@@ -263,7 +263,7 @@ double psd_bending_power_law(double fk, double *arg)
 
 double psd_bending_power_law_sqrt(double fk, double *arg)
 {
-  double A=exp(arg[0]/2.0), alpha_hi=arg[1]/2.0, alpha_lo=arg[2]/2.0;
+  double A=exp(arg[0]/2.0), alpha_hi=arg[1]/2.0, alpha_lo=(arg[1] - arg[2])/2.0;
   double fc=exp(arg[3]), cnoise=exp(arg[4]);
 
   if(fk < parset.freq_limit)

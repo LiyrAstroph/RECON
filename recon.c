@@ -554,7 +554,7 @@ int recon_init()
       var_range_model[i++][1] = 5.0;
 
       var_range_model[i][0] = 0.0; //alpha_lo
-      var_range_model[i++][1] = 1.0;
+      var_range_model[i++][1] = 2.0;
 
       var_range_model[i][0] = log(freq_limit_data/(2.0*PI)); //characteristic frequency
       var_range_model[i++][1] = log(1.0e0);
