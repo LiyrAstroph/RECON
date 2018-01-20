@@ -580,7 +580,7 @@ int recon_init()
     var_range_model[i++][1] = log(1.0e6);
 
     var_range_model[i][0] = log(freq_limit_data); //center
-    var_range_model[i++][1] = log(1.0e0);
+    var_range_model[i++][1] = log(ndata/(time_data[ndata-1] - time_data[0]));
 
     var_range_model[i][0] = log(1.0e-10);   //sigma
     var_range_model[i++][1] = log(1.0e6);
@@ -823,7 +823,7 @@ double perturb_recon(void *model)
   do
   {
     rnd = dnest_rand();
-    if(rnd < 0.5)
+    if(rnd < 0.2)
       which = dnest_rand_int(num_params_psd);
     else
       which = dnest_rand_int(num_recon) + num_params_psd;
@@ -1043,8 +1043,8 @@ void set_par_range()
   // continuum light curve parameters
   for(i=num_params_psd+1; i<num_params_psd+nd_sim; i++)
   {
-    par_range_model[i][0] = var_range_model[num_params_psd][0];
-    par_range_model[i][1] = var_range_model[num_params_psd][1];
+    par_range_model[i][0] = var_range_model[num_params_psd+1][0];
+    par_range_model[i][1] = var_range_model[num_params_psd+1][1];
   }
 
   for(i=num_params_psd+nd_sim; i< num_params; i++)
