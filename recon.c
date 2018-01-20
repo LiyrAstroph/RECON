@@ -553,11 +553,11 @@ int recon_init()
       var_range_model[i][0] = 1.0; //alpha_hi
       var_range_model[i++][1] = 5.0;
 
-      var_range_model[i][0] = 0.0; //alpha_lo
+      var_range_model[i][0] = 0.0; //alpha_hi-alpha_lo
       var_range_model[i++][1] = 2.0;
 
-      var_range_model[i][0] = log(freq_limit_data/(2.0*PI)); //characteristic frequency
-      var_range_model[i++][1] = log(1.0e0);
+      var_range_model[i][0] = log(freq_limit_data); //the smallest freq as bending frequency
+      var_range_model[i++][1] = log(ndata/(time_data[ndata-1] - time_data[0])); // the largest freq
 
       break;
 
