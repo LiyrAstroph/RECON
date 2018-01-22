@@ -428,7 +428,8 @@ int recon_init()
     DT = parset.DT/W;
     nd_sim = parset.nd_sim * W * V;
     
-    freq_limit_data = 1.0/(nd_sim * DT/W);
+    freq_limit_data_lower = 1.0/(nd_sim * DT/W);
+    freq_limit_data_upper = 1.0/(DT/W);
   }
   else
   {
@@ -515,7 +516,8 @@ int recon_init()
       fprintf(finfo, "mean data cad.: %f\n", (time_data[ndata-1] - time_data[0])/(ndata -1));
     }
 
-    freq_limit_data = 1.0/(time_data[ndata-1] - time_data[0]);
+    freq_limit_data_lower = 1.0/(time_data[ndata-1] - time_data[0]);
+    freq_limit_data_upper = ndata/(time_data[ndata-1] - time_data[0]);
   }
   
   num_recon = nd_sim;
@@ -545,8 +547,8 @@ int recon_init()
       break;
 
     case 1:   // damped random walk
-      var_range_model[i][0] = log(freq_limit_data/(2.0*PI)); //characteristic frequency
-      var_range_model[i++][1] = log(1.0e0);
+      var_range_model[i][0] = log(freq_limit_data_lower/(2.0*PI)); //characteristic frequency
+      var_range_model[i++][1] = log(freq_limit_data_upper/(2.0*PI));
       break;
   
     case 2:  // bending power-law
@@ -556,8 +558,8 @@ int recon_init()
       var_range_model[i][0] = 0.0; //alpha_hi-alpha_lo
       var_range_model[i++][1] = 2.0;
 
-      var_range_model[i][0] = log(freq_limit_data); //the smallest freq as bending frequency
-      var_range_model[i++][1] = log(ndata/(time_data[ndata-1] - time_data[0])); // the largest freq
+      var_range_model[i][0] = log(freq_limit_data_lower); //the smallest freq as bending frequency
+      var_range_model[i++][1] = log(freq_limit_data_upper); // the largest freq
 
       break;
 
@@ -579,7 +581,7 @@ int recon_init()
     var_range_model[i][0] = log(1.0e-10);  //Ap
     var_range_model[i++][1] = log(1.0e6);
 
-    var_range_model[i][0] = log(freq_limit_data); //center
+    var_range_model[i][0] = log(freq_limit_data_lower); //center
     var_range_model[i++][1] = log(ndata/(time_data[ndata-1] - time_data[0]));
 
     var_range_model[i][0] = log(1.0e-10);   //sigma

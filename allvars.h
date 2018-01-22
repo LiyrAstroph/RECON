@@ -27,12 +27,13 @@ extern int ndata;
 extern double *flux_data, *time_data, *err_data;
 extern double time_media, time_cad_min, time_cad_media, flux_data_min, flux_data_max, flux_scale, flux_mean;
 
-extern double freq_limit_data;
+extern double freq_limit_data_lower, freq_limit_data_upper;
 
 extern int nd_sim;
 extern double DT, V, W;
 extern double *time_sim, *flux_sim, *flux_data_sim;
 extern double *flux_sim_mean, *err_sim_mean;
+extern double err_data_mean;
 
 extern gsl_interp_accel *gsl_acc_sim;
 extern gsl_interp  *gsl_linear_sim;
