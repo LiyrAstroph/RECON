@@ -33,7 +33,6 @@ extern int nd_sim;
 extern double DT, V, W;
 extern double *time_sim, *flux_sim, *flux_data_sim;
 extern double *flux_sim_mean, *err_sim_mean;
-extern double err_data_mean;
 
 extern gsl_interp_accel *gsl_acc_sim;
 extern gsl_interp  *gsl_linear_sim;
