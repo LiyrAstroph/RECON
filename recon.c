@@ -1161,6 +1161,20 @@ void sim()
     fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], parset.ferr);
   }
   fclose(fp);
+
+  sprintf(fname, "%s/%s_full", parset.file_dir, parset.file_sim);
+  fp = fopen(fname, "w");
+  if(fp==NULL)
+  {
+    printf("Cannot open file fname.\n");
+    exit(0);
+  }
+  
+  for(i=0; i<nd_sim; i++)
+  {
+    fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], parset.ferr);
+  }
+  fclose(fp);
   
   free(model);
   gsl_rng_free(gsl_r);
