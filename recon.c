@@ -1095,7 +1095,16 @@ void sim()
   gsl_rng * gsl_r;
   gsl_T = gsl_rng_default;
   gsl_r = gsl_rng_alloc (gsl_T);
-  gsl_rng_set(gsl_r, time(NULL));
+
+  if(recon_flag_seed == 1)
+  {
+    gsl_rng_set(gsl_r, recon_seed+thistask*10);
+  }
+  else
+  {
+    gsl_rng_set(gsl_r, time(NULL)+thistask*10);
+  }
+  
 
   model = malloc(size_of_modeltype);
   
@@ -1170,7 +1179,14 @@ void test()
   gsl_rng * gsl_r;
   gsl_T = gsl_rng_default;
   gsl_r = gsl_rng_alloc (gsl_T);
-  gsl_rng_set(gsl_r, time(NULL));
+  if(recon_flag_seed == 1)
+  {
+    gsl_rng_set(gsl_r, recon_seed+thistask*10);
+  }
+  else
+  {
+    gsl_rng_set(gsl_r, time(NULL)+thistask*10);
+  }
 
   model = malloc(size_of_modeltype);
   

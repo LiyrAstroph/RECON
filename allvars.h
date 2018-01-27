@@ -64,6 +64,8 @@ extern int recon_flag_help;
 extern int recon_flag_end;
 extern int recon_flag_limits;
 extern int recon_flag_prior_exam;
+extern int recon_flag_seed;
+extern int recon_seed;
 
 typedef struct
 {
