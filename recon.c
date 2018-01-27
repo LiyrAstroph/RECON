@@ -75,8 +75,11 @@ int recon()
   }
   else
   {
-    dnest(argc, argv);
-    recon_postproc();
+    if(recon_flag_psd != 1)
+    {
+      dnest(argc, argv);
+      recon_postproc();
+    }
   }
   
   recon_end();

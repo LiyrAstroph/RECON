@@ -55,8 +55,9 @@ int main(int argc, char **argv)
     recon_flag_limits=0;
     recon_flag_prior_exam=0;
     recon_flag_seed = 0;
+    recon_flag_psd = 0;
 
-    while( (opt = getopt(argc, argv, "pgt:rchles:")) != -1)
+    while( (opt = getopt(argc, argv, "pgt:rchles:d")) != -1)
     {
       switch(opt)
       {
@@ -110,6 +111,11 @@ int main(int argc, char **argv)
           printf("# Examine priors.\n");
           break;
 
+        case 'd':
+          recon_flag_psd = 1;
+          printf("# Only calculate PSD.\n");
+          break;
+
         case 'h':
           recon_flag_help = 1;
           print_help();
@@ -150,6 +156,7 @@ int main(int argc, char **argv)
   MPI_Bcast(&recon_flag_prior_exam, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&recon_flag_seed, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&recon_seed, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
   if(recon_flag_end == 1 && recon_flag_help == 0 )
   {
