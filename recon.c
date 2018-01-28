@@ -259,10 +259,14 @@ int recon_init()
           sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
         
         
-          if(parset.psd_arg[0] <=0.0)
+          if(parset.psd_arg[0] < 0.0)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
+          }
+          else if(parset.psd_arg[0] == 0.0)
+          {
+            parset.psd_arg[0] = -DBL_MAX;
           }
           else
           {
@@ -294,10 +298,14 @@ int recon_init()
         {
           sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
 
-          if(parset.psd_arg[0] <=0.0)
+          if(parset.psd_arg[0] < 0.0)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
+          }
+          else if(parset.psd_arg[0] == 0.0)
+          {
+            parset.psd_arg[0] = -DBL_MAX;
           }
           else
           {
@@ -342,10 +350,14 @@ int recon_init()
           sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
                                                             &parset.psd_arg[3], &parset.psd_arg[4]);
 
-          if(parset.psd_arg[0] <=0.0)
+          if(parset.psd_arg[0] < 0.0)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
+          }
+          else if(parset.psd_arg[0] == 0.0)
+          {
+            parset.psd_arg[0] = -DBL_MAX;
           }
           else
           {
@@ -387,12 +399,67 @@ int recon_init()
           sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
                   &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
 
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-          parset.psd_arg[2] = -DBL_MAX;
-          parset.psd_arg[3] = log(parset.psd_arg[3]);
-          parset.psd_arg[4] = log(parset.psd_arg[4]);
-          parset.psd_arg[5] = log(parset.psd_arg[5]);
+          if(parset.psd_arg[0] < 0.0)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[0] == 0.0)
+          {
+            parset.psd_arg[0] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[0] = log(parset.psd_arg[0]);
+          }
 
+          if(parset.psd_arg[2] < 0.0)
+          {
+            printf("# Incorrect 3rd PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[2] == 0.0)
+          {
+            parset.psd_arg[2] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[2] = log(parset.psd_arg[2]);
+          }
+
+          if(parset.psd_arg[3] < 0.0)
+          {
+            printf("# Incorrect 4th PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[3] == 0.0)
+          {
+            parset.psd_arg[3] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[3] = log(parset.psd_arg[3]);
+          }
+          
+          if(parset.psd_arg[4] <= 0.0)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[4] = log(parset.psd_arg[4]);
+          }
+
+          if(parset.psd_arg[5] <= 0.0)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[5] = log(parset.psd_arg[5]);
+          }
         }
         break;
 
@@ -522,7 +589,7 @@ int recon_init()
     freq_limit_data_lower = 1.0/(time_data[ndata-1] - time_data[0]);
     freq_limit_data_upper = ndata/(time_data[ndata-1] - time_data[0]);
   }
-  
+
   num_recon = nd_sim;
   if(parset.psd_type >= 3)
     num_recon += nd_sim/2;
@@ -537,8 +604,8 @@ int recon_init()
   {
     var_range_model[i] = malloc(2*sizeof(double));
   }
-  i=0;
 
+  i=0;
   var_range_model[i][0] = log(1.0e-10); // A
   var_range_model[i++][1] = log(1.0e6);
   
@@ -575,7 +642,7 @@ int recon_init()
       var_range_model[i][0] = 0.0;
       var_range_model[i++][1] = 5.0;
   }
-
+  
   var_range_model[i][0] = log(1.0e-10); //noise
   var_range_model[i++][1] = log(1.0e3);
 
@@ -585,12 +652,12 @@ int recon_init()
     var_range_model[i++][1] = log(1.0e6);
 
     var_range_model[i][0] = log(freq_limit_data_lower); //center
-    var_range_model[i++][1] = log(ndata/(time_data[ndata-1] - time_data[0]));
+    var_range_model[i++][1] = log(freq_limit_data_upper);
 
     var_range_model[i][0] = log(1.0e-10);   //sigma
     var_range_model[i++][1] = log(1.0e6);
   }
-
+  
   var_range_model[i][0] = -100.0;  //zero-frequency power
   var_range_model[i++][1] = 100.0;
 
@@ -604,6 +671,7 @@ int recon_init()
   par_fix = (int *) malloc(num_params * sizeof(int));
   par_fix_val = (double *) malloc(num_params * sizeof(double));
 
+  
   set_par_range();
   //setup fixed parameters
   for(i=0; i<num_params; i++)
@@ -629,7 +697,7 @@ int recon_init()
 
   perturb_accept = malloc(num_particles * sizeof(int));
   
-
+  
   if(thistask == roottask)
   {
     fclose(finfo);
@@ -1128,6 +1196,12 @@ void sim()
   }
 
   genlc(model);
+
+  // add Gaussian noise
+  for(i=0; i<nd_sim; i++)
+  {
+    flux_sim[i] += parset.ferr*gsl_ran_ugaussian(gsl_r);
+  }
   
   sprintf(fname, "%s/%s", parset.file_dir, parset.file_sim);
   fp = fopen(fname, "w");
@@ -1141,7 +1215,6 @@ void sim()
   i2 = nd_sim/2 + nd_sim/V/2;
   for(i=i1; i<i2; i=i+W)
   {
-    flux_sim[i] += parset.ferr*gsl_ran_ugaussian(gsl_r);
     if(gsl_rng_uniform(gsl_r) > parset.fbad)
     {
       fprintf(fp, "%f %f %f\n", time_sim[i], flux_sim[i], parset.ferr);
