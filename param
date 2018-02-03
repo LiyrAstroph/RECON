@@ -7,24 +7,26 @@ PSDType    0                # psd type
 #===============================================
 # data 
 
-FileDir    .               # file direcotry
+FileDir         .                # file direcotry
 
-FileName   data/sim.txt     # file name
+FileName        data/sim.txt     # file name
 
-V          2.0              # factor for extension of time interval in term of data
-W          2.0              # factor for time resolution in terms of data  
+V               2.0              # factor for extension of time interval in term of data
+W               2.0              # factor for time resolution in terms of data  
 
-FreqLimit  1.0e-5           # frequency limit below which PSD flattens off
+FreqLimit       5.0e-4           # frequency limit below which PSD flattens off
+FlagEndMatch    1                # end matching to reduce leakage
 #===============================================
 # only for simulation (-g option turned on)
 
-FileSim   data/sim.txt      #
-ND_Sim    200                # number of points
-DT        1.0               # time resolution
-FBad      0.33               # fraction of bad points
-FErr      0.1               # measurement noise
+FileSim         data/sim.txt       #
+ND_Sim          200                # number of points
+DT              1.0                # time resolution
+FBad            0.0                # fraction of bad points
+FErr            0.1                # measurement noise
 
-PSDArg   0.1:1.5:0.0       # psd argument, type 0:  A:alpha:noise
-#PSDArg   1.0e3:1.0e-2:0.0  # psd argument, type 1: A:fknee:noise                         
-
+# PSD argument
+PSDArg          0.1:2.5:1.0                # type 0, single power-law:  A:alpha:noise
+#PSDArg         1.0e3:1.0e-2:0.0            # type 1, DRW: A:fknee:noise                         
+#PSDArg         1.0e1:2.5:1.5:1.5e-2:0.01   # type 2, bending power-law: A:a1:a2:freq:noise
 #===============================================

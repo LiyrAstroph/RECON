@@ -85,6 +85,7 @@ typedef struct
   char file_sim[200];
   int nd_sim;
   double DT;
+  int flag_endmatch;
 }PARSET;
 extern PARSET parset;
 

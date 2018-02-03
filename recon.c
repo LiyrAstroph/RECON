@@ -584,7 +584,6 @@ int recon_init()
       fprintf(finfo, "min. data cad.: %f\n", time_cad_min);
       fprintf(finfo, "med. data cad.: %f\n", time_cad_media);
       fprintf(finfo, "mean data cad.: %f\n", (time_data[ndata-1] - time_data[0])/(ndata -1));
-      fprintf(finfo, "random seed: %d\n", recon_seed);
     }
 
     freq_limit_data_lower = 1.0/(time_data[ndata-1] - time_data[0]);
@@ -833,7 +832,7 @@ void from_prior_recon(void *model)
 
   for(i=0; i<num_params_psd+1; i++)
   {
-    pm[i] = var_range_model[i][0] + dnest_rand()*(par_range_model[i][1] - par_range_model[i][0]);
+    pm[i] = par_range_model[i][0] + dnest_rand()*(par_range_model[i][1] - par_range_model[i][0]);
   }
 
   for(i=1; i<nd_sim; i++)
@@ -1081,6 +1080,7 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
   FILE *fp;
   int i;
   char buf[200];
+  double slope;
 
   fp = fopen(fname, "r");
   if(fp==NULL)
@@ -1096,6 +1096,16 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
   }
   fclose(fp);
 
+  // end matching 
+  if(parset.flag_endmatch == 1)
+  {
+    slope = (f[n-1] - f[0])/(t[n-1] - t[0]);
+    for(i=0; i<n; i++)
+    {
+      f[i] -= (slope*(t[i] - t[0]));
+    }
+  }
+  
   return 0;
 }
 

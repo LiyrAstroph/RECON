@@ -62,6 +62,10 @@ void read_parset()
     addr[nt] = &parset.str_psd_arg;
     id[nt++] = STRING;
 
+    strcpy(tag[nt], "FlagEndMatch");
+    addr[nt] = &parset.flag_endmatch;
+    id[nt++] = INT;
+
     strcpy(tag[nt], "FileSim");
     addr[nt] = &parset.file_sim;
     id[nt++] = STRING;
@@ -91,6 +95,9 @@ void read_parset()
       fprintf(stderr, "# Error: Cannot open file %s\n", fname);
       exit(-1);
     }
+
+    //default values
+    parset.flag_endmatch = 0;
 
     while(!feof(fparam))
     {
@@ -155,6 +162,11 @@ void read_parset()
     {
       printf("#Incorrect ferr=%f\n. ferr should be positive.\n", parset.ferr);
       exit(0);
+    }
+
+    if(recon_flag_psd == 1)
+    {
+      parset.flag_endmatch = 0;
     }
   }
   
