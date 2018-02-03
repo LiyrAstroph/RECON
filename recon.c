@@ -497,7 +497,7 @@ int recon_init()
     time_media = 0.0;
     DT = parset.DT/W;
     nd_sim = parset.nd_sim * W * V;
-    
+
     freq_limit_data_lower = 1.0/(nd_sim * DT/W);
     freq_limit_data_upper = 1.0/(DT/W);
   }
@@ -584,6 +584,7 @@ int recon_init()
       fprintf(finfo, "min. data cad.: %f\n", time_cad_min);
       fprintf(finfo, "med. data cad.: %f\n", time_cad_media);
       fprintf(finfo, "mean data cad.: %f\n", (time_data[ndata-1] - time_data[0])/(ndata -1));
+      fprintf(finfo, "random seed: %d\n", recon_seed);
     }
 
     freq_limit_data_lower = 1.0/(time_data[ndata-1] - time_data[0]);
@@ -626,7 +627,7 @@ int recon_init()
       var_range_model[i++][1] = 5.0;
 
       var_range_model[i][0] = 0.0; //alpha_hi-alpha_lo
-      var_range_model[i++][1] = 2.0;
+      var_range_model[i++][1] = 4.0;
 
       var_range_model[i][0] = log(freq_limit_data_lower); //the smallest freq as bending frequency
       var_range_model[i++][1] = log(freq_limit_data_upper); // the largest freq
@@ -1173,7 +1174,9 @@ void sim()
   }
   else
   {
-    gsl_rng_set(gsl_r, time(NULL)+thistask*10);
+    recon_seed = time(NULL);
+    gsl_rng_set(gsl_r, recon_seed+thistask*10);
+    printf("# random seed: %d\n", recon_seed);
   }
   
 
