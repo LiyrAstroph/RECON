@@ -9,8 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <fftw3.h>
 #include <gsl/gsl_interp.h>
+#include <gsl/gsl_fit.h>
 
 #include "proto.h"
 #include "allvars.h"
@@ -53,6 +55,9 @@ int psddata_cal()
     fprintf(fp, "%e %e\n", freq[i], psd[i]);
   }
   fclose(fp);
+
+
+  psd_fit_check(freq, psd, nf);
 
   free(freq);
   free(psd);
@@ -205,6 +210,61 @@ int resample(double *t, double *f, int n, double *ts, double *fs)
   gsl_interp_accel_free(gsl_acc);
 
   return 0;
+}
+
+void psd_fit_check(double *freq, double *psd, int nf)
+{
+  FILE *fp;
+  int i, nf_rebin;
+  double c0, c1, cov00, cov01, cov11, res;
+  double *freq_rebin, *psd_rebin;
+  char fname[200], str1[200], str2[200], *pstr;
+  
+  freq_rebin = malloc(nf*sizeof(double));
+  psd_rebin = malloc(nf*sizeof(double));
+
+  psd_fft_rebin(freq, psd, nf, freq_rebin, psd_rebin, &nf_rebin);
+
+  for(i=0; i<nf_rebin; i++)
+  {
+    freq_rebin[i] = log10(freq_rebin[i]);
+    psd_rebin[i] = log10(psd_rebin[i]);
+  }
+  gsl_fit_linear(freq_rebin, 1, psd_rebin, 1, nf_rebin, &c0, &c1, &cov00, &cov01, &cov11, &res);
+
+  printf("# Single power-law PSD fit, slope: %f.\n", c1);
+  if( -c1 > 1.8 && -c1 < 2.2)
+  {
+    printf("# **** Leakage WARNING! ****\n", c1);
+  }
+
+  strcpy(str1, parset.file_name);
+
+  pstr = strchr(str1, '/');
+  strcpy(str2, pstr+1);
+
+  *pstr = '\0';
+
+  sprintf(fname, "%s/%s/psd_%s_rebin", parset.file_dir, str1, str2);
+
+  fp = fopen(fname, "w");
+  
+  if(fp == NULL)
+  {
+    printf("Cannot open file %s.\n", fname);
+    exit(0);
+  }
+
+  for(i=0; i<nf_rebin; i++)
+  {
+    fprintf(fp, "%e %e\n", pow(10.0, freq_rebin[i]), pow(10.0, psd_rebin[i]));
+  }
+  fclose(fp);
+
+  free(freq_rebin);
+  free(psd_rebin);
+
+  return;
 }
 
 double psd_drw(double fk, double *arg)

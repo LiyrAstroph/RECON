@@ -39,6 +39,7 @@ int psddata_cal();
 int psd_fft(double *t, double *f, int n, double *freq, double *psd, int *nf);
 int psd_fft_rebin(double *freq, double *psd, int nf, double *freq_rebin, double *psd_rebin, int *nf_rebin);
 int resample(double *t, double *f, int n, double *ts, double *fs);
+void psd_fit_check(double *freq, double *psd, int nf);
 
 /* system */
 double second();

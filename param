@@ -26,7 +26,7 @@ FBad            0.0                # fraction of bad points
 FErr            0.1                # measurement noise
 
 # PSD argument
-PSDArg          0.1:2.5:1.0                # type 0, single power-law:  A:alpha:noise
+PSDArg          1.0e-3:2.5:0.01                # type 0, single power-law:  A:alpha:noise
 #PSDArg         1.0e3:1.0e-2:0.0            # type 1, DRW: A:fknee:noise                         
 #PSDArg         1.0e1:2.5:1.5:1.5e-2:0.01   # type 2, bending power-law: A:a1:a2:freq:noise
 #===============================================
