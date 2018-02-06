@@ -284,7 +284,7 @@ double psd_drw_sqrt(double fk, double *arg)
   //if(fk < freq_limit_sim)
   //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
   //else
-    return sqrt(A/sqrt(1.0 + pow(fk/fknee, 2.0))+ cnoise);
+    return sqrt(A/(1.0 + pow(fk/fknee, 2.0))+ cnoise);
 }
 
 double psd_power_law(double fk, double *arg)
