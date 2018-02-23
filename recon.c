@@ -249,7 +249,7 @@ int recon_init()
   {
     switch(parset.psd_type)
     {
-      case 0:
+      case 0: // single power-law
         psdfunc = psd_power_law;
         psdfunc_sqrt = psd_power_law_sqrt;
         parset.num_params_psd = 3;
@@ -289,7 +289,7 @@ int recon_init()
         }
         break;
   
-      case 1:
+      case 1: // damped random walk
         psdfunc = psd_drw;
         psdfunc_sqrt = psd_drw_sqrt;
         parset.num_params_psd = 3;
@@ -339,7 +339,7 @@ int recon_init()
 
         break;
       
-      case 2:
+      case 2: // bending power-law
         psdfunc = psd_bending_power_law;
         psdfunc_sqrt = psd_bending_power_law_sqrt;
         
@@ -390,7 +390,7 @@ int recon_init()
         }
         break;
 
-      case 3:
+      case 3: // single power-law and periodic
         psdfunc = psd_power_law;
         psdfunc_sqrt = psd_power_law_sqrt;
         parset.num_params_psd = 6;
@@ -460,6 +460,177 @@ int recon_init()
           {
             parset.psd_arg[5] = log(parset.psd_arg[5]);
           }
+        }
+        break;
+      
+      case 4:  // drw + periodic
+        psdfunc = psd_drw;
+        psdfunc_sqrt = psd_drw_sqrt;
+        parset.num_params_psd = 6;
+
+        if(recon_flag_sim == 1)
+        {
+          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2], 
+                                                    &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
+
+          if(parset.psd_arg[0] < 0.0)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[0] == 0.0)
+          {
+            parset.psd_arg[0] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[0] = log(parset.psd_arg[0]);
+          }
+
+          if(parset.psd_arg[1] <=0.0)
+          {
+            printf("# Incorrect 2nd PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[1] = log(parset.psd_arg[1]);
+          }
+
+          if(parset.psd_arg[2] < 0.0)
+          {
+            printf("# Incorrect 3rd PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[2] == 0.0)
+          {
+            parset.psd_arg[2] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[2] = log(parset.psd_arg[2]);
+          }
+
+          if(parset.psd_arg[3] < 0.0)
+          {
+            printf("# Incorrect 4th PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[3] == 0.0)
+          {
+            parset.psd_arg[3] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[3] = log(parset.psd_arg[3]);
+          }
+          
+          if(parset.psd_arg[4] <= 0.0)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[4] = log(parset.psd_arg[4]);
+          }
+
+          if(parset.psd_arg[5] <= 0.0)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[5] = log(parset.psd_arg[5]);
+          }
+        }
+
+        break;
+
+      case 5:   // bending power-law + periodic 
+        psdfunc = psd_bending_power_law;
+        psdfunc_sqrt = psd_bending_power_law_sqrt;
+        
+        parset.num_params_psd = 8;
+
+        if(recon_flag_sim == 1)
+        {
+          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
+                  &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5], &parset.psd_arg[6], &parset.psd_arg[7]);
+
+          if(parset.psd_arg[0] < 0.0)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[0] == 0.0)
+          {
+            parset.psd_arg[0] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[0] = log(parset.psd_arg[0]);
+          }
+
+          if(parset.psd_arg[3] <=0.0)
+          {
+            printf("# Incorrect 4th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[3] = log(parset.psd_arg[3]);
+          }
+
+          if(parset.psd_arg[4] < 0.0)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[4] == 0.0)
+          {
+            parset.psd_arg[4] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[4] = log(parset.psd_arg[4]);
+          }
+
+          if(parset.psd_arg[5] < 0.0)
+          {
+            printf("# Incorrect 6th PSDArg.\n");
+            exit(0);
+          }
+          else if(parset.psd_arg[5] == 0.0)
+          {
+            parset.psd_arg[5] = -DBL_MAX;
+          }
+          else
+          {
+            parset.psd_arg[5] = log(parset.psd_arg[5]);
+          }
+          
+          if(parset.psd_arg[6] <= 0.0)
+          {
+            printf("# Incorrect 7th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[6] = log(parset.psd_arg[6]);
+          }
+
+          if(parset.psd_arg[7] <= 0.0)
+          {
+            printf("# Incorrect 8th PSDArg.\n");
+            exit(0);
+          }
+          else
+          {
+            parset.psd_arg[7] = log(parset.psd_arg[7]);
+          }
+
         }
         break;
 
@@ -633,9 +804,26 @@ int recon_init()
 
       break;
 
-    case 3:
+    case 3:  // single power-law + periodic
       var_range_model[i][0] = 0.0;      //slope
       var_range_model[i++][1] = 5.0;
+      break;
+
+    case 4:   // damped random walk + periodic
+      var_range_model[i][0] = log(freq_limit_data_lower/(2.0*PI)); //characteristic frequency
+      var_range_model[i++][1] = log(freq_limit_data_upper/(2.0*PI));
+      break;
+
+    case 5:  // bending power law + periodic
+      var_range_model[i][0] = 1.0; //alpha_hi
+      var_range_model[i++][1] = 5.0;
+
+      var_range_model[i][0] = 0.0; //alpha_hi-alpha_lo
+      var_range_model[i++][1] = 4.0;
+
+      var_range_model[i][0] = log(freq_limit_data_lower); //the smallest freq as bending frequency
+      var_range_model[i++][1] = log(freq_limit_data_upper); // the largest freq
+
       break;
 
     default:
@@ -776,6 +964,7 @@ int genlc(const void *model)
     fft_work[i][1] *= psd_sqrt;
   }
 
+  // add periodic component
   if(parset.psd_type >=3)
   {
     for(i=1; i<nd_sim/2+1; i++)
