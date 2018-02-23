@@ -14,8 +14,8 @@ ifeq ($(SYSTEM), "Linux")
 NCORE      :=$(grep -c ^processor /proc/cpuinfo)
 GSL_INCL    = $(shell pkg-config --cflags gsl) 
 GSL_LIBS    = $(shell pkg-config --libs gsl) 
-LAPACK_INCL = -I/usr/include/lapacke
-LAPACK_LIBS = -L/usr/lib64 -llapacke -llapack -lblas
+#LAPACK_INCL = -I/usr/include/lapacke
+#LAPACK_LIBS = -L/usr/lib64 -llapacke -llapack -lblas
 DNEST_INCL  = -I /home/liyropt/Projects/GIT/DNest/
 DNEST_LIBS  = -L /home/liyropt/Projects/GIT/DNest -ldnest
 FFTW_INCL   = $(shell pkg-config --cflags fftw3) 
@@ -30,8 +30,8 @@ GSL_INCL = -I/mbh/mbhd01/user/liyanrong/soft/gsl/include
 GSL_LIBS = -L/mbh/mbhd01/user/liyanrong/soft/gsl/lib  -lgsl -lgslcblas -lm
 MPICHLIB = -L/mbh/mbhd01/user/liyanrong/soft/mpich3/lib -lmpich
 MPIINCL  = -I/mbh/mbhd01/user/liyanrong/soft/mpich3/include
-LAPACK_INCL = -I/mbh/mbhd01/user/liyanrong/soft/lapack/include
-LAPACK_LIBS = -L/mbh/mbhd01/user/liyanrong/soft/lapack/lib -llapacke -llapack -lblas -lgfortran
+#LAPACK_INCL = -I/mbh/mbhd01/user/liyanrong/soft/lapack/include
+#LAPACK_LIBS = -L/mbh/mbhd01/user/liyanrong/soft/lapack/lib -llapacke -llapack -lblas -lgfortran
 FFTW_INCL = -I/mbh/mbhd01/user/liyanrong/soft/fftw/include
 FFTW_LIBS = -L/mbh/mbhd01/user/liyanrong/soft/fftw/lib -lfftw3
 
@@ -44,8 +44,8 @@ GSL_INCL =
 GSL_LIBS = -lgsl -lgslcblas -lm
 MPICHLIB = -lmpich
 MPIINCL  =
-LAPACK_INCL = -I/HOME/ihep_yrli_1/BIGDATA/soft/lapack/include
-LAPACK_LIBS = -L/HOME/ihep_yrli_1/BIGDATA/soft/lapack/lib -llapacke -llapack -lblas -lgfortran
+#LAPACK_INCL = -I/HOME/ihep_yrli_1/BIGDATA/soft/lapack/include
+#LAPACK_LIBS = -L/HOME/ihep_yrli_1/BIGDATA/soft/lapack/lib -llapacke -llapack -lblas -lgfortran
 FFTW_INCL =
 FFTW_LIBS = -lfftw3
 
