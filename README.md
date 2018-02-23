@@ -15,18 +15,18 @@ After installing the above packages, edit the corresponding library paths in ``M
 # Useage
 
 ```bash
-mpiexec -n np ./recon param 
+mpiexec -n np ./recon param
 ```
 
 where ``np`` is the number of cores and ``param`` is the parameter file.  
 
 # Command-line Options
 ``RECON`` provides several command-line options:
-- **-g**, generate a mock light curve using the PSD specified in ``param`` file, e.g., 
+- **-g**, generate a mock light curve using the PSD specified in ``param`` file, e.g.,
 ```bash
 mpiexec -n 4 ./recon param -g
 ```
-- **-s**, set a seed for random number generator, e.g., set a seed with a value of 100, 
+- **-s**, set a seed for random number generator, e.g., set a seed with a value of 100,
 ```bash
 mpiexec -n 4 ./recon param -s100
 ```
@@ -34,7 +34,7 @@ mpiexec -n 4 ./recon param -s100
 ```bash
 mpiexec -n 4 ./recon param -l
 ```
-- **-p**, only do posterior processing when MCMC sampling is available, e.g., 
+- **-p**, only do posterior processing when MCMC sampling is available, e.g.,
 ```bash
 mpiexec -n 4 ./recon param -p
 ```
@@ -43,7 +43,7 @@ mpiexec -n 4 ./recon param -p
 mpiexec -n 4 ./recon param -t2
 ```
 
-Once can also combine the above options, e.g., 
+Once can also combine the above options, e.g.,
 ```bash
 mpiexec -n 4 ./recon param -ls100
 ```
@@ -57,12 +57,12 @@ A typical parameter file looks like,
 ```
 # parameter file
 # lines beginning with '#' are regarded as comments and are neglected
-# 
+#
 
 PSDType    0                # psd type
 
 #===============================================
-# data 
+# data
 
 FileDir         .                # file direcotry
 
@@ -89,4 +89,7 @@ PSDArg          1.0e-3:2.5:0.0                # type 0, single power-law:  A:alp
 #===============================================
 ```
 
-A more detailed usage guideline is coming.
+# An Exemplary Case
+![Application to 5100A light curve of NGC 5548](https://github.com/liyropt/MyGithubPic/blob/master/ngc5548_lc_github.jpg)
+
+**A more detailed usage guideline is coming.**
