@@ -12,7 +12,7 @@ To compile ``RECON``, the following third-party packages are required:
 
 After installing the above packages, edit the corresponding library paths in ``Makefile``, and then use ``make`` to compile the ``RECON``.
 
-# Useage
+# Running
 
 ```bash
 mpiexec -n np ./recon param
@@ -90,6 +90,7 @@ PSDArg          1.0e-3:2.5:0.0                # type 0, single power-law:  A:alp
 ```
 
 # An Exemplary Case
-![Application to 5100A light curve of NGC 5548](https://github.com/liyropt/MyGithubPic/blob/master/ngc5548_lc_github.jpg)
+Application to the 5100A light curve of NGC 5548, see arXiv: 1802.07958.
+![Application to the 5100A light curve of NGC 5548](https://github.com/liyropt/MyGithubPic/blob/master/ngc5548_lc_github.jpg)
 
 **A more detailed usage guideline is coming.**
