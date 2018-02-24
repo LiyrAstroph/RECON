@@ -66,6 +66,10 @@ void read_parset()
     addr[nt] = &parset.flag_endmatch;
     id[nt++] = INT;
 
+    strcpy(tag[nt], "PeriodPSDProfType");
+    addr[nt] = &parset.periodpsd_proftype;
+    id[nt++] = INT;
+
     strcpy(tag[nt], "FileSim");
     addr[nt] = &parset.file_sim;
     id[nt++] = STRING;

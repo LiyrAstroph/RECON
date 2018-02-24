@@ -23,8 +23,10 @@ double psd_drw(double fk, double *arg);
 double psd_drw_sqrt(double fk, double *arg);
 double psd_power_law(double fk, double *arg);
 double psd_power_law_sqrt(double fk, double *arg);
-double psd_period(double fk, double *arg);
-double psd_period_sqrt(double fk, double *arg);
+double psd_period_gaussian(double fk, double *arg);
+double psd_period_sqrt_gaussian(double fk, double *arg);
+double psd_period_lorentz(double fk, double *arg);
+double psd_period_sqrt_lorentz(double fk, double *arg);
 double psd_bending_power_law(double fk, double *arg);
 double psd_bending_power_law_sqrt(double fk, double *arg);
 int recon_postproc();
@@ -70,4 +72,6 @@ void (*restart_clouds)(int iflag);
 double (*psdfunc)(double, double *);
 double (*psdfunc_sqrt)(double, double *);
 
+double (*psdfunc_period)(double, double *);
+double (*psdfunc_period_sqrt)(double, double *);
 #endif

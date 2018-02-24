@@ -247,6 +247,17 @@ int recon_init()
 
   if(thistask == roottask)
   {
+    if(parset.periodpsd_proftype == 1)
+    {
+      psdfunc_period = psd_period_lorentz;
+      psdfunc_period_sqrt = psd_period_sqrt_lorentz;
+    }
+    else
+    {
+      psdfunc_period = psd_period_gaussian;
+      psdfunc_period_sqrt = psd_period_sqrt_gaussian;
+    }
+
     switch(parset.psd_type)
     {
       case 0: // single power-law
@@ -657,6 +668,8 @@ int recon_init()
 
   MPI_Bcast(&psdfunc, sizeof(psdfunc), MPI_BYTE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&psdfunc_sqrt, sizeof(psdfunc_sqrt), MPI_BYTE, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&psdfunc_period, sizeof(psdfunc_period), MPI_BYTE, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&psdfunc_period_sqrt, sizeof(psdfunc_period_sqrt), MPI_BYTE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&parset.num_params_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(parset.psd_arg, parset.num_params_psd, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
 
@@ -973,7 +986,7 @@ int genlc(const void *model)
     for(i=1; i<nd_sim/2+1; i++)
     {
       freq = i*1.0/(nd_sim * DT);
-      psd_sqrt = psd_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
+      psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
       fft_work[i][0] += psd_sqrt * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
       fft_work[i][1] += psd_sqrt * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }

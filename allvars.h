@@ -86,6 +86,7 @@ typedef struct
   int nd_sim;
   double DT;
   int flag_endmatch;
+  int periodpsd_proftype;
 }PARSET;
 extern PARSET parset;
 
