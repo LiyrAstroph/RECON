@@ -42,6 +42,10 @@ mpiexec -n 4 ./recon param -p
 ```bash
 mpiexec -n 4 ./recon param -t2
 ```
+- **-d**, calculate the periodogram (PSD) of input data, e.g.,
+```bash
+mpiexec -n 4 ./recon param -d
+```
 
 Once can also combine the above options, e.g.,
 ```bash
@@ -88,6 +92,11 @@ PSDArg          1.0e-3:2.5:0.0                # type 0, single power-law:  A:alp
 #PSDArg           1.0e1:2.5:1.5:1.5e-2:0.01   # type 2, bending power-law: A:a1:a2:freq:noise
 #===============================================
 ```
+
+# Outputs 
+``RECON`` generates posterior samples ``posterior_sample.txt`` for PSD parameters and frequency series for reconstructing input time series. The reconstructions based on posterior samples are stored in ``recon.txt``.
+
+``RECON`` also calculates evidence at the end of running, printed out on terminal screen.
 
 # An Exemplary Case
 Application to the 5100A light curve of NGC 5548, see arXiv: 1802.07958.
