@@ -755,6 +755,9 @@ int recon_init()
       fprintf(finfo, "min. data cad.: %f\n", time_cad_min);
       fprintf(finfo, "med. data cad.: %f\n", time_cad_media);
       fprintf(finfo, "mean data cad.: %f\n", (time_data[ndata-1] - time_data[0])/(ndata -1));
+
+      fprintf(finfo, "end mathcing flag: %d.\n", parset.flag_endmatch);
+      fprintf(finfo, "level-dependent sampling flag: %d\n", recon_flag_limits);
     }
 
     freq_limit_data_lower = 1.0/(time_data[ndata-1] - time_data[0]);

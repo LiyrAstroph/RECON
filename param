@@ -20,7 +20,7 @@ V               2.0              # factor for extension of time interval in term
 W               2.0              # factor for time resolution in terms of data  
 
 FreqLimit       5.0e-4           # frequency limit below which PSD flattens off
-FlagEndMatch    1                # end matching to reduce leakage, 0, no; 1, yes.
+FlagEndMatch    0                # end matching to reduce leakage, 0, no; 1, yes.
 #===============================================
 # only for simulation (-g option turned on)
 
@@ -35,6 +35,6 @@ FErr            0.1                # measurement noise
 #PSDArg         1.0e3:1.0e-2:0.0                   # type 1, DRW: A:fknee:noise                         
 #PSDArg         1.0e1:2.5:1.5:1.5e-2:0.01          # type 2, bending power-law: A:a1:a2:freq:noise
 #PSDArg         1.0e-3:2.5:0.0:1.5e2:5.0e-3:0.1    # type 3, single power-law + periodic
-PSDArg          1.0e3:1.0e-2:0.0:5.0e3:5.0e-3:0.1  # type 4, DRW + periodic
+PSDArg          0.0e3:1.0e-2:0.0:5.0e3:5.0e-2:0.001  # type 4, DRW + periodic
 #PSDArg          1.0e1:2.5:1.5:1.5e-2:0.01:5.0e2:5.0e-3:0.1   # type5, bending power-law + periodic
 #===============================================
