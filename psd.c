@@ -337,28 +337,28 @@ double psd_bending_power_law_sqrt(double fk, double *arg)
 
 double psd_period_gaussian(double fk, double *arg)
 {
-  double Ap=exp(arg[0]), center=arg[1], sigma=exp(arg[2]);
+  double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
 
-  return Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (log(fk) - center)/sigma, 2.0 ));
+  return Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (fk - center)/sigma, 2.0 ));
 }
 
 double psd_period_sqrt_gaussian(double fk, double *arg)
 {
-  double Ap=exp(arg[0]), center=arg[1], sigma=exp(arg[2]);
+  double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
 
-  return sqrt(Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.25 * pow( (log(fk) - center)/sigma, 2.0 )));
+  return sqrt(Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.25 * pow( (fk - center)/sigma, 2.0 )));
 }
 
 double psd_period_lorentz(double fk, double *arg)
 {
-  double Ap=exp(arg[0]), center=arg[1], width=exp(arg[2]);
+  double Ap=exp(arg[0]), center=exp(arg[1]), width=exp(arg[2]);
 
-  return Ap * width*width/(width*width + pow(log(fk)-center, 2.0));
+  return Ap/PI *width/(width*width + pow(fk-center, 2.0));
 }
 
 double psd_period_sqrt_lorentz(double fk, double *arg)
 {
-  double Ap=exp(arg[0]), center=arg[1], width=exp(arg[2]);
+  double Ap=exp(arg[0]), center=exp(arg[1]), width=exp(arg[2]);
 
-  return sqrt( Ap * width*width/(width*width + pow(log(fk)-center, 2.0)) );
+  return sqrt( Ap/PI *width/(width*width + pow(fk-center, 2.0)) );
 }
