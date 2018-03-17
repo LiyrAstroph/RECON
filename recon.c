@@ -972,13 +972,16 @@ int genlc(const void *model)
   fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1];
   fft_work[nd_sim/2][1] = 0.0;
 
-  for(i=1; i<nd_sim/2+1; i++)
+  for(i=1; i<nd_sim/2; i++)
   {
     freq = i*1.0/(nd_sim * DT);
     psd_sqrt = psdfunc_sqrt(freq, arg)/sqrt(2.0);
     fft_work[i][0] *= psd_sqrt;
     fft_work[i][1] *= psd_sqrt;
   }
+  freq = nd_sim/2*1.0/(nd_sim * DT);
+  psd_sqrt = psdfunc_sqrt(freq, arg);
+  fft_work[nd_sim/2][0] *= psd_sqrt;
 
   // add periodic component
   if(parset.psd_type >=3)
@@ -987,8 +990,8 @@ int genlc(const void *model)
     {
       freq = i*1.0/(nd_sim * DT);
       psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
-      fft_work[i][0] += psd_sqrt * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += psd_sqrt * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][0] += psd_sqrt * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psd_sqrt * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
   }
 
