@@ -66,6 +66,10 @@ void read_parset()
     addr[nt] = &parset.flag_endmatch;
     id[nt++] = INT;
 
+    strcpy(tag[nt], "FlagWhiteNoise");
+    addr[nt] = &parset.flag_whitenoise;
+    id[nt++] = INT;
+
     strcpy(tag[nt], "PeriodPSDProfType");
     addr[nt] = &parset.periodpsd_proftype;
     id[nt++] = INT;
@@ -102,6 +106,7 @@ void read_parset()
 
     //default values
     parset.flag_endmatch = 0;
+    parset.flag_whitenoise = 0;
 
     while(!feof(fparam))
     {

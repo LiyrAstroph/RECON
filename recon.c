@@ -881,6 +881,17 @@ int recon_init()
   for(i=0; i<num_params; i++)
     par_fix[i] = 0;
 
+  if(parset.flag_whitenoise == 0)
+  {
+    par_fix[num_params_psd-3 - 1] = 1;
+    par_fix_val[num_params_psd-3 - 1] = -DBL_MAX;
+
+    if(thistask == roottask)
+    {
+      printf("# Exclude white noise.\n");
+    }
+  }
+
   time_sim = malloc(nd_sim * sizeof(double));
   flux_sim = malloc(nd_sim * sizeof(double));
   flux_sim_mean = malloc(nd_sim * sizeof(double));
@@ -1063,7 +1074,7 @@ void print_particle_recon(FILE *fp, const void *model)
 
   for(i=0; i<num_params; i++)
   {
-    fprintf(fp, "%f ", pm[i] );
+    fprintf(fp, "%e ", pm[i] );
   }
   fprintf(fp, "\n");
 }

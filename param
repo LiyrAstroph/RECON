@@ -2,7 +2,7 @@
 # lines beginning with '#' are regarded as comments and are neglected
 # 
 
-PSDType    4                # 0-5; psd type, 0: single power-law
+PSDType    3                # 0-5; psd type, 0: single power-law
                             #                1: DRW
                             #                2: bending power-law
                             #                3: single power-law + periodic
@@ -14,14 +14,15 @@ PSDType    4                # 0-5; psd type, 0: single power-law
 
 FileDir         .                # file direcotry
 
-FileName        data/sim.txt     # file name
+FileName        data/sim_t1.txt     # file name
 
 V               2.0              # factor for extension of time interval in term of data
 W               2.0              # factor for time resolution in terms of data  
 
-FreqLimit       5.0e-4           # frequency limit below which PSD flattens off
+FreqLimit       5.0e-5           # frequency limit below which PSD flattens off
 FlagEndMatch    0                # end matching to reduce leakage, 0, no; 1, yes.
-PeriodPSDProfType  1                # profile type for periodic PSD, 0, gaussian; 1, lorentz
+PeriodPSDProfType  1             # profile type for periodic PSD, 0, gaussian; 1, lorentz
+FlagWhiteNoise     0             # white noise in PSD, 0, exclued; 1, included
 #===============================================
 # only for simulation (-g option turned on)
 
@@ -29,13 +30,13 @@ FileSim         data/sim.txt       # output file name of simulated time series
 ND_Sim          2000                # number of points
 DT              2.0                # time resolution
 FBad            0.0               # fraction of bad points
-FErr            0.1                # measurement noise
+FErr            1.0                # measurement noise
 
 # PSD argument
 #PSDArg         1.0e-3:2.5:0.0                     # type 0, single power-law:  A:alpha:noise
 #PSDArg         1.0e3:1.0e-2:0.0                   # type 1, DRW: A:fknee:noise                         
 #PSDArg         1.0e1:2.5:1.5:1.5e-2:0.01          # type 2, bending power-law: A:a1:a2:freq:noise
-#PSDArg          1.0e-3:2.5:0.0:5e4:5.0e-3:0.1    # type 3, single power-law + periodic
-PSDArg          1.0e2:5.0e-3:0.0:5.0e0:5.0e-3:0.00001  # type 4, DRW + periodic
+PSDArg          1.0e-1:1.5:0.0:5.0e1:5.0e-3:5.0e-5    # type 3, single power-law + periodic
+#PSDArg          1.0e2:5.0e-3:0.0:5.0e0:5.0e-3:0.00001  # type 4, DRW + periodic
 #PSDArg          1.0e1:2.5:1.5:1.5e-2:0.01:5.0e2:5.0e-3:0.1   # type5, bending power-law + periodic
 #===============================================
