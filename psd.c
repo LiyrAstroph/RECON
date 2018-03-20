@@ -346,7 +346,7 @@ double psd_period_sqrt_gaussian(double fk, double *arg)
 {
   double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
 
-  return sqrt(Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.25 * pow( (fk - center)/sigma, 2.0 )));
+  return sqrt(Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.5 * pow( (fk - center)/sigma, 2.0 )));
 }
 
 double psd_period_lorentz(double fk, double *arg)
