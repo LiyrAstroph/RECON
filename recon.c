@@ -883,9 +883,17 @@ int recon_init()
 
   if(parset.flag_whitenoise == 0)
   {
-    par_fix[num_params_psd-3 - 1] = 1;
-    par_fix_val[num_params_psd-3 - 1] = -DBL_MAX;
-
+    if(parset.psd_type < 3) // no periodic component
+    {
+      par_fix[num_params_psd-1] = 1;
+      par_fix_val[num_params_psd-1] = -DBL_MAX;
+    }
+    else // periodic component included
+    {
+      par_fix[num_params_psd-3 - 1] = 1;
+      par_fix_val[num_params_psd-3 - 1] = -DBL_MAX;
+    }
+    
     if(thistask == roottask)
     {
       printf("# Exclude white noise.\n");
