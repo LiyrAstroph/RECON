@@ -15,13 +15,19 @@ import matplotlib.pyplot as plt
 from PyAstronomy.pyTiming import pyPDM
 from astropy.stats import LombScargle
 
+#=======================================================
 # resmple time series
+#
+#=======================================================
 def resample(t, f):
   trs = np.linspace(t[0], t[-1], len(t))
   frs = np.interp(trs, t, f)
   return trs, frs
 
+#=======================================================
 # calculate psd
+#
+#=======================================================
 def fft_psd(t, f, normed=True):
   
   # interpolate light cruve into evenly sampling
@@ -48,7 +54,10 @@ def fft_psd(t, f, normed=True):
 
   return freq, psd
 
+#=======================================================
 # single power law PSD function
+#
+#=======================================================
 def psd_power_law(fk, arg):
   A= np.exp(arg[0])
   alpha=arg[1]
@@ -63,7 +72,10 @@ def psd_power_law(fk, arg):
   
   return psd
 
+#=======================================================
 # square root of single power law PSD function
+#
+#=======================================================
 def psd_power_law_sqrt(fk, arg):
   A= np.exp(arg[0])
   alpha=arg[1]
@@ -78,7 +90,10 @@ def psd_power_law_sqrt(fk, arg):
   
   return np.sqrt(psd)
 
+#=======================================================
 # Lorentzian PSD function
+#
+#=======================================================
 def psd_period_lorentz(fk, arg):
   Ap = np.exp(arg[0])
   center = np.exp(arg[1])
@@ -87,7 +102,10 @@ def psd_period_lorentz(fk, arg):
   
   return psd
 
+#=======================================================
 # square root of Lorentzian PSD function  
+#
+#=======================================================
 def psd_period_sqrt_lorentz(fk, arg):
   Ap = np.exp(arg[0])
   center = np.exp(arg[1])
@@ -96,7 +114,10 @@ def psd_period_sqrt_lorentz(fk, arg):
   
   return np.sqrt(psd)
 
+#=======================================================
 # generate time series  
+#
+#=======================================================
 def genlc(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per, nd_sim
   global DT, flux_scale, flux_mean
@@ -125,8 +146,11 @@ def genlc(model):
   
   return ts, fs 
 
+#=======================================================
 # generate time series on the time grid of data  
 # note that Gaussian noises for the measurement error are included.
+#
+#=======================================================
 def genlc_data(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per, nd_sim
   global DT, flux_scale, flux_mean
@@ -158,8 +182,11 @@ def genlc_data(model):
   
   fsd += np.random.randn(lc.shape[0]) * ls[:, 2]
   return lc[:, 0], fsd 
-  
+
+#=======================================================  
 # generate time series with given PSD
+#
+#=======================================================
 def genlc_psd(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per
   global DT, flux_scale, flux_mean
@@ -191,8 +218,11 @@ def genlc_psd(model):
   
   return ts, fs 
 
+#=======================================================
 # generate time series on the observed time grid with given PSD
 # note that Gaussian noises for the measurement error are included.
+#
+#=======================================================
 def genlc_psd_data(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per, nd_sim
   global DT, flux_scale, flux_mean
@@ -225,12 +255,18 @@ def genlc_psd_data(model):
   fsd += np.random.randn(lc.shape[0]) * lc[:, 2]
   return lc[:, 0], fsd 
 
+#=======================================================
 # load posterior sample
+#
+#=======================================================
 def load_sample():
   global sample
   sample = np.loadtxt("data/posterior_sample.txt")
 
+#=======================================================
 # load observed light curve
+#
+#=======================================================
 def load_lcdata():
   global lc, freqlc, psdlc
   global W, V, DT, time_media, flux_scale, flux_mean
@@ -253,7 +289,10 @@ def load_lcdata():
   flux_scale = (np.max(lc[:, 1]) - np.min(lc[:, 1]))/2.0
   print "DT:", DT, time_media, flux_scale, flux_mean
 
+#=======================================================
 # load param  
+#
+#=======================================================
 def load_param():
   global parset
   parset = {}
@@ -275,17 +314,20 @@ def load_param():
   
   
   return
-  
+
+#=======================================================  
 # calculate pb(TR)
+#
+#=======================================================
 def pb_TR():
   global sample, freqlc, psdlc
-  global lc
+  global lc, ncycle, tpmin
   
   TR = np.zeros(sample.shape[0])
   TRobs = np.zeros(sample.shape[0])
   
   tspan = lc[-1, 0] - lc[0, 0]
-  idx = np.where((freqlc < 0.01) & (freqlc > 1.0/(tspan/3.0)))
+  idx = np.where((freqlc <= 1.0/tpmin) & (freqlc >= 1.0/(tspan/ncycle)))
   for i in range(sample.shape[0]):
     ts, fs = genlc_psd_data(sample[i, :])
     freq, psds = fft_psd(ts, fs)
@@ -299,6 +341,9 @@ def pb_TR():
     TRobs[i] = 2.0*np.max(psdlc[idx[0]]/psdtrue[idx[0]])
     #plt.plot(freq, psds)
     #plt.plot(freq, psdtrue)
+    #plt.plot(freqlc, psdlc, color='k')
+    #plt.axvline(x=1.0/tpmin, ls='--')
+    #plt.axvline(x=1.0/(tspan/ncycle),ls='--')    
     #plt.xscale('log')
     #plt.yscale('log')
     #plt.show()
@@ -306,12 +351,15 @@ def pb_TR():
   pb = np.sum(TR>TRobs)*1.0/sample.shape[0]
   print "TR:", pb
   
-  plt.hist(TR, bins=20, normed=True)
-  plt.hist(TRobs, bins=20, normed=True)
+  plt.hist(TR, bins=20, normed=True, color='r')
+  plt.hist(TRobs, bins=20, normed=True, color='b')
   plt.show()
   return pb, TR, TRobs
 
+#=======================================================
 # calculate pb(TLS)
+#
+#=======================================================
 def pb_TLS():
   global lc
   global ls_freq
@@ -319,7 +367,7 @@ def pb_TLS():
   ts = lc[:, 0]
   fs  = copy.copy(lc[:, 1])
   fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
-  lsp_data = LombScargle(ts, fs).power(ls_freq, normalization='psd')
+  lsp_data = LombScargle(ts, fs).power(ls_freq, normalization='standard')
   idxmax = np.argmax(lsp_data)
   
   period_obs = 1.0/ls_freq[idxmax]/365.0
@@ -332,7 +380,7 @@ def pb_TLS():
   for i in range(sample.shape[0]):
     ts, fs = genlc_psd_data(sample[i, :])
     fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
-    lsp = LombScargle(ts, fs).power(ls_freq, normalization='psd')
+    lsp = LombScargle(ts, fs).power(ls_freq, normalization='standard')
     idxmax = np.argmax(lsp)
     period = 1.0/ls_freq[idxmax]/365.0
     TLS[i] = lsp[idxmax]
@@ -346,7 +394,10 @@ def pb_TLS():
   plt.show()  
   return pb_TLS, TLS, TLS_obs
 
+#=======================================================
 #calculate pb(TPDM)  
+#
+#=======================================================
 def pb_TPDM():
   global lc, sample
   global pdm_scan
@@ -387,8 +438,11 @@ if __name__=="__main__":
   global freq_limit, num_params_psd, num_params_psd_sto, num_params_psd_per, nd_sim
   global W, V, DT, time_media, flux_scale, flux_mean
   global parset
-  global pdm_scan, ls_freq
+  global pdm_scan, ls_freq, ncycle, tpmin
   
+  ncycle = 4.0
+  tpmin = 100.0
+
   load_param()
   load_sample()
   
@@ -407,7 +461,7 @@ if __name__=="__main__":
   
   tspan = lc[-1, 0] - lc[0, 0]
   print "Tspan:", tspan/365.0
-  ls_freq = np.logspace(np.log10(1.0/(100.0)), np.log10(1.0/(tspan/5.0)), 1000)
+  ls_freq = np.logspace(np.log10(1.0/tpmin), np.log10(1.0/(tspan/ncycle)), 1000)
   pdm_scan = pyPDM.Scanner(minVal=100.0, maxVal=tspan/5.0, dVal=10.0, mode="period")
   
   if num_params_psd_per == 0:
