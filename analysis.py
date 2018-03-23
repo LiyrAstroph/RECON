@@ -115,12 +115,37 @@ def psd_period_sqrt_lorentz(fk, arg):
   return np.sqrt(psd)
 
 #=======================================================
+# Gaussian PSD function
+#
+#=======================================================
+def psd_period_gaussian(fk, arg):
+  Ap = np.exp(arg[0])
+  center = np.exp(arg[1])
+  width = np.exp(arg[2])
+  psd = Ap/np.sqrt(2.0*np.pi)/width * np.exp( -0.5*(fk-center)**2/width**2 )
+  
+  return psd
+
+#=======================================================
+# square root of Gaussian PSD function  
+#
+#=======================================================
+def psd_period_sqrt_gaussian(fk, arg):
+  Ap = np.exp(arg[0])
+  center = np.exp(arg[1])
+  width = np.exp(arg[2])
+  psd = Ap/np.sqrt(2.0*np.pi)/width * np.exp( -0.5*(fk-center)**2/width**2 )
+  
+  return np.sqrt(psd)
+
+#=======================================================
 # generate time series  
 #
 #=======================================================
 def genlc(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per, nd_sim
   global DT, flux_scale, flux_mean
+  global psd_period, psd_period_sqrt
   
   arg = model[:num_params_psd_sto]
   
@@ -135,7 +160,7 @@ def genlc(model):
   
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
-    fft_work[1:] += np.sqrt(psd_period_lorentz(freq[1:], arg)) * (np.sin(model[num_params_psd + nd_sim:]*2.0*np.pi) + 1j*np.cos(model[num_params_psd + nd_sim:]*2.0*np.pi))
+    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * (np.sin(model[num_params_psd + nd_sim:]*2.0*np.pi) + 1j*np.cos(model[num_params_psd + nd_sim:]*2.0*np.pi))
   
   fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
   
@@ -155,6 +180,7 @@ def genlc_data(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per, nd_sim
   global DT, flux_scale, flux_mean
   global lc
+  global psd_period, psd_period_sqrt
   
   arg = model[:num_params_psd_sto]
   
@@ -169,7 +195,7 @@ def genlc_data(model):
   
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
-    fft_work[1:] += np.sqrt(psd_period_lorentz(freq[1:], arg)) * np.exp(1j*model[num_params_psd + nd_sim:]*2.0*np.pi)
+    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*model[num_params_psd + nd_sim:]*2.0*np.pi)
   
   fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
   
@@ -190,6 +216,7 @@ def genlc_data(model):
 def genlc_psd(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per
   global DT, flux_scale, flux_mean
+  global psd_period, psd_period_sqrt
   
   nd_sim = 1000
   W = 4
@@ -207,7 +234,7 @@ def genlc_psd(model):
   
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
-    fft_work[1:] += np.sqrt(psd_period_lorentz(freq[1:], arg)) * np.exp(1j*np.random.rand(nd_sim/2)*2.0*np.pi)
+    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*np.random.rand(nd_sim/2)*2.0*np.pi)
   
   fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
   
@@ -227,6 +254,7 @@ def genlc_psd_data(model):
   global num_params_psd, num_params_psd_sto, num_params_psd_per, nd_sim
   global DT, flux_scale, flux_mean
   global lc
+  global psd_period, psd_period_sqrt
   
   arg = model[:num_params_psd_sto]
   
@@ -241,7 +269,7 @@ def genlc_psd_data(model):
   
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
-    fft_work[1:] += np.sqrt(psd_period_lorentz(freq[1:], arg)) * np.exp(1j*np.random.rand(nd_sim/2)*2.0*np.pi)
+    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*np.random.rand(nd_sim/2)*2.0*np.pi)
   
   fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
   
@@ -322,6 +350,7 @@ def load_param():
 def pb_TR():
   global sample, freqlc, psdlc
   global lc, ncycle, tpmin
+  global psd_period, psd_period_sqrt
   
   TR = np.zeros(sample.shape[0])
   TRobs = np.zeros(sample.shape[0])
@@ -335,7 +364,7 @@ def pb_TR():
       psdtrue = psd_power_law(freq, sample[i, :num_params_psd_sto])*flux_scale**2
     else:
       psdtrue = (psd_power_law(freq, sample[i, :3]) + \
-      psd_period_lorentz(freq, sample[i, num_params_psd_sto:num_params_psd]))*flux_scale**2
+      psd_period(freq, sample[i, num_params_psd_sto:num_params_psd]))*flux_scale**2
       
     TR[i] = 2.0*np.max(psds[idx[0]]/psdtrue[idx[0]])
     TRobs[i] = 2.0*np.max(psdlc[idx[0]]/psdtrue[idx[0]])
@@ -351,8 +380,8 @@ def pb_TR():
   pb = np.sum(TR>TRobs)*1.0/sample.shape[0]
   print "TR:", pb
   
-  plt.hist(TR, bins=20, normed=True, color='r')
-  plt.hist(TRobs, bins=20, normed=True, color='b')
+  plt.hist(TR, bins=50, normed=True, color='r')
+  plt.hist(TRobs, bins=50, normed=True, color='b')
   plt.show()
   return pb, TR, TRobs
 
@@ -389,7 +418,7 @@ def pb_TLS():
   pb_TLS = np.sum(TLS>TLS_obs)*1.0/sample.shape[0]
   print "TLS:", pb_TLS
   
-  plt.hist(TLS, bins=20)
+  plt.hist(TLS, bins=50)
   plt.axvline(x=TLS_obs, color='r')
   plt.show()  
   return pb_TLS, TLS, TLS_obs
@@ -411,7 +440,7 @@ def pb_TPDM():
   idxmin = np.argmin(tpdm)
   print "PDM:", fpdm[idxmin], tpdm[idxmin]
   
-  TPDM_obs = tpdm[idxmin]
+  TPDM_obs = 1.0 - tpdm[idxmin]
   TPDM = np.zeros(sample.shape[0])
   
   for i in range(sample.shape[0]):
@@ -420,12 +449,12 @@ def pb_TPDM():
     P = pyPDM.PyPDM(ts, fs)
     fpdm, tpdm = P.pdmEquiBinCover(5, 5, pdm_scan)
     idxmin = np.argmin(tpdm)
-    TPDM[i] = tpdm[idxmin]
+    TPDM[i] = 1.0 - tpdm[idxmin]
   
   pb_TPDM = np.sum(TPDM>TPDM_obs)*1.0/sample.shape[0]
   print "TPDM:", pb_TPDM
   
-  plt.hist(TPDM, bins=20)
+  plt.hist(TPDM, bins=50)
   plt.axvline(x=TPDM_obs, color='r')
   plt.show()  
   return pb_TPDM, TPDM, TPDM_obs
@@ -439,6 +468,7 @@ if __name__=="__main__":
   global W, V, DT, time_media, flux_scale, flux_mean
   global parset
   global pdm_scan, ls_freq, ncycle, tpmin
+  global psd_period, psd_period_sqrt
   
   ncycle = 4.0
   tpmin = 100.0
@@ -446,6 +476,13 @@ if __name__=="__main__":
   load_param()
   load_sample()
   
+  if parset['PeriodPSDProfType'] == 0:
+    psd_period = psd_period_gaussian
+    psd_period_sqrt = psd_period_sqrt_gaussian
+  else:
+    psd_period = psd_period_lorentz
+    psd_period_sqrt = psd_period_sqrt_lorentz
+
   num_params_psd_sto = 3
   if(parset['PSDType'] >= 3):
     num_params_psd_per = 3
@@ -461,8 +498,8 @@ if __name__=="__main__":
   
   tspan = lc[-1, 0] - lc[0, 0]
   print "Tspan:", tspan/365.0
-  ls_freq = np.logspace(np.log10(1.0/tpmin), np.log10(1.0/(tspan/ncycle)), 1000)
-  pdm_scan = pyPDM.Scanner(minVal=100.0, maxVal=tspan/5.0, dVal=10.0, mode="period")
+  ls_freq = np.logspace(np.log10(1.0/tpmin), np.log10(1.0/(tspan/ncycle)), 500)
+  pdm_scan = pyPDM.Scanner(minVal=100.0, maxVal=tspan/ncycle, dVal=10.0, mode="period")
   
   if num_params_psd_per == 0:
     nd_sim = sample.shape[1] - num_params_psd
