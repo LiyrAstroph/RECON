@@ -347,7 +347,7 @@ def load_param():
 # calculate pb(TR)
 #
 #=======================================================
-def pb_TR():
+def pb_TR(doplot=False):
   global sample, freqlc, psdlc
   global lc, ncycle, tpmin
   global psd_period, psd_period_sqrt
@@ -380,16 +380,19 @@ def pb_TR():
   pb = np.sum(TR>TRobs)*1.0/sample.shape[0]
   print "TR:", pb
   
-  plt.hist(TR, bins=50, normed=True, color='r')
-  plt.hist(TRobs, bins=50, normed=True, color='b')
-  plt.show()
+  if doplot:
+   plt.hist(TR, bins=50, normed=True, color='r')
+   plt.hist(TRobs, bins=50, normed=True, color='b')
+   plt.show()
+   plt.close()
+
   return pb, TR, TRobs
 
 #=======================================================
 # calculate pb(TLS)
 #
 #=======================================================
-def pb_TLS():
+def pb_TLS(doplot=False):
   global lc
   global ls_freq
   
@@ -418,16 +421,19 @@ def pb_TLS():
   pb_TLS = np.sum(TLS>TLS_obs)*1.0/sample.shape[0]
   print "TLS:", pb_TLS
   
-  plt.hist(TLS, bins=50)
-  plt.axvline(x=TLS_obs, color='r')
-  plt.show()  
+  if doplot:
+    plt.hist(TLS, bins=50)
+    plt.axvline(x=TLS_obs, color='r')
+    plt.show()
+    plt.close()
+
   return pb_TLS, TLS, TLS_obs
 
 #=======================================================
 #calculate pb(TPDM)  
 #
 #=======================================================
-def pb_TPDM():
+def pb_TPDM(doplot=False):
   global lc, sample
   global pdm_scan
   
@@ -454,9 +460,11 @@ def pb_TPDM():
   pb_TPDM = np.sum(TPDM>TPDM_obs)*1.0/sample.shape[0]
   print "TPDM:", pb_TPDM
   
-  plt.hist(TPDM, bins=50)
-  plt.axvline(x=TPDM_obs, color='r')
-  plt.show()  
+  if doplot:
+    plt.hist(TPDM, bins=50)
+    plt.axvline(x=TPDM_obs, color='r')
+    plt.show()
+    plt.close()  
   return pb_TPDM, TPDM, TPDM_obs
     
   return 
@@ -508,6 +516,12 @@ if __name__=="__main__":
   
   print sample.shape[1], nd_sim, num_params_psd
 
-  pbTR, TR, TR_obs = pb_TR()
-  pbTLS, TLS, TLS_obs = pb_TLS()
-  pbTPDM, TPDM, TPDM_obs = pb_TPDM()
+  pbTR, TR, TR_obs = pb_TR(doplot=True)
+  pbTLS, TLS, TLS_obs = pb_TLS(doplot=True)
+  pbTPDM, TPDM, TPDM_obs = pb_TPDM(doplot=True)
+
+  np.savetxt("TR.txt", np.stack((TR, TR_obs), axis=-1), fmt="%15.5f  %15.5f")
+  np.savetxt("TLS.txt", np.hstack((TLS, TLS_obs)), fmt="%15.5f")
+  np.savetxt("TPDM.txt", np.hstack((TPDM, TPDM_obs)), fmt="%15.5f")
+
+
