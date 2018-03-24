@@ -304,7 +304,8 @@ def load_lcdata():
   
   ts = lc[:, 0]
   fs  = copy.copy(lc[:, 1])
-  fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
+  if flag_endmatch:
+    fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
   freqlc, psdlc = fft_psd(ts, fs)
   #freqlc, psdlc = np.loadtxt(os.path.dirname(parset["FileName"])+"/psd_"+os.path.basename(parset["FileName"]), unpack=True)
   
@@ -359,6 +360,10 @@ def pb_TR(doplot=False):
   idx = np.where((freqlc <= 1.0/tpmin) & (freqlc >= 1.0/(tspan/ncycle)))
   for i in range(sample.shape[0]):
     ts, fs = genlc_psd_data(sample[i, :])
+
+    if flag_endmatch:
+      fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
+
     freq, psds = fft_psd(ts, fs)
     if num_params_psd_per == 0:
       psdtrue = psd_power_law(freq, sample[i, :num_params_psd_sto])*flux_scale**2
@@ -368,6 +373,7 @@ def pb_TR(doplot=False):
       
     TR[i] = 2.0*np.max(psds[idx[0]]/psdtrue[idx[0]])
     TRobs[i] = 2.0*np.max(psdlc[idx[0]]/psdtrue[idx[0]])
+    
     #plt.plot(freq, psds)
     #plt.plot(freq, psdtrue)
     #plt.plot(freqlc, psdlc, color='k')
@@ -398,7 +404,8 @@ def pb_TLS(doplot=False):
   
   ts = lc[:, 0]
   fs  = copy.copy(lc[:, 1])
-  fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
+  if flag_endmatch:
+    fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
   lsp_data = LombScargle(ts, fs).power(ls_freq, normalization='standard')
   idxmax = np.argmax(lsp_data)
   
@@ -411,7 +418,8 @@ def pb_TLS(doplot=False):
   
   for i in range(sample.shape[0]):
     ts, fs = genlc_psd_data(sample[i, :])
-    fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
+    if flag_endmatch:
+      fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
     lsp = LombScargle(ts, fs).power(ls_freq, normalization='standard')
     idxmax = np.argmax(lsp)
     period = 1.0/ls_freq[idxmax]/365.0
@@ -439,7 +447,9 @@ def pb_TPDM(doplot=False):
   
   ts = lc[:, 0]
   fs  = copy.copy(lc[:, 1])
-  fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
+
+  if flag_endmatch:
+    fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
   
   P = pyPDM.PyPDM(ts, fs)
   fpdm, tpdm = P.pdmEquiBinCover(5, 5, pdm_scan)
@@ -477,9 +487,11 @@ if __name__=="__main__":
   global parset
   global pdm_scan, ls_freq, ncycle, tpmin
   global psd_period, psd_period_sqrt
+  global flag_endmatch
   
-  ncycle = 4.0
+  ncycle = 1.5
   tpmin = 100.0
+  flag_endmatch = True
 
   load_param()
   load_sample()
