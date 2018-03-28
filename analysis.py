@@ -291,6 +291,14 @@ def load_sample():
   global sample
   sample = np.loadtxt("data/posterior_sample.txt")
 
+  print "AR:", np.mean(sample[:, 0]/np.log(10.0)) + 2.0*np.log10(flux_scale), np.std(sample[:, 0]/np.log(10.0))
+  print "alpha:", np.mean(sample[:, 1]), np.std(sample[:, 1])
+  
+  if num_params_psd_per > 0:
+    print "AP:", np.mean(sample[:, 3]/np.log(10.0)) + 2.0*np.log10(flux_scale), np.std(sample[:, 3]/np.log(10.0))
+    print "nu0:", np.mean(sample[:, 4]/np.log(10.0)), np.std(sample[:, 4]/np.log(10.0))
+    print "w:", np.mean(sample[:, 5]/np.log(10.0)), np.std(sample[:, 5]/np.log(10.0))
+
 #=======================================================
 # load observed light curve
 #
@@ -492,9 +500,9 @@ if __name__=="__main__":
   ncycle = 1.5
   tpmin = 100.0
   flag_endmatch = True
+  print flag_endmatch
 
   load_param()
-  load_sample()
   
   if parset['PeriodPSDProfType'] == 0:
     psd_period = psd_period_gaussian
@@ -515,6 +523,7 @@ if __name__=="__main__":
   W = parset['W']
   
   load_lcdata()
+  load_sample()
   
   tspan = lc[-1, 0] - lc[0, 0]
   print "Tspan:", tspan/365.0
