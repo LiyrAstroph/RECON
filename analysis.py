@@ -25,7 +25,7 @@ def resample(t, f):
   return trs, frs
 
 #=======================================================
-# calculate psd
+# calculate PSD
 #
 #=======================================================
 def fft_psd(t, f, normed=True):
@@ -53,6 +53,52 @@ def fft_psd(t, f, normed=True):
     psd *= 2.0 * (trs[-1]-trs[0])/(len(trs)**2)
 
   return freq, psd
+
+#=============================================================
+# rebin PSD
+#
+#=============================================================
+def fft_psd_rebin(freq, psd):
+  freq_work = np.log10(freq)
+  psd_work = np.log10(psd)
+
+  freq0 = freq[0]
+  width = freq[1] - freq[0]
+  width_log = np.log10(1.1)
+  nbins_min = 1
+
+  ic = 0;
+  f0 = freq_work[0];
+  i0 = 0
+
+  freq_rebin = np.zeros(len(freq))
+  psd_rebin = np.zeros(len(freq))
+
+  while f0 < freq_work[-1]:
+    f1 = f0 + width_log
+
+    i1 = int( (10.0**f1 - freq0)/width )
+
+    if i1-i0 < nbins_min:
+      i1 = i0 + nbins_min
+
+    if ((len(freq)-1 - i1 < nbins_min)) or (freq_work[-1] - f1 < width_log):
+      i1 = len(freq) - 1
+
+    f1 = freq_work[i1]
+    freq_rebin[ic] = 0.5*(freq_work[i0] + freq_work[i1])
+    fsum = freq_work[i1] - freq_work[i0];
+    psum = 0.0
+    for i in range(i0, i1):
+      psum += 0.5*(psd_work[i] + psd_work[i+1]) * (freq_work[i+1] - freq_work[i])
+
+    psd_rebin[ic] = psum/fsum
+
+    i0 = i1
+    f0 = f1
+    ic += 1
+
+  return 10.0**freq_rebin[:ic], 10.0**psd_rebin[:ic]
 
 #=======================================================
 # single power law PSD function
@@ -160,7 +206,7 @@ def genlc(model):
   
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
-    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * (np.sin(model[num_params_psd + nd_sim:]*2.0*np.pi) + 1j*np.cos(model[num_params_psd + nd_sim:]*2.0*np.pi))
+    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*model[num_params_psd + nd_sim:]*2.0*np.pi)
   
   fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
   
@@ -191,8 +237,7 @@ def genlc_data(model):
   freq = 1.0/(nd_sim * DT) * np.linspace(0.0, nd_sim/2, nd_sim/2+1)
   fft_work[1:nd_sim/2] = psd_power_law_sqrt(freq[1:nd_sim/2], arg)/np.sqrt(2.0) \
                         * (model[num_params_psd + 1:num_params_psd + nd_sim -1:2] + 1j*model[num_params_psd + 2:num_params_psd +nd_sim-1:2])
-  fft_work[nd_sim/2] = psd_power_law_sqrt(freq[nd_sim/2:], arg) * (np.sin(model[num_params_psd + nd_sim:]*2.0*np.pi) + 1j*np.cos(model[num_params_psd + nd_sim:]*2.0*np.pi))
-  
+  fft_work[nd_sim/2] = psd_power_law_sqrt(freq[nd_sim/2:], arg) * (model[num_params_psd + nd_sim - 1]  + 1j*0.0)
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
     fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*model[num_params_psd + nd_sim:]*2.0*np.pi)
@@ -360,13 +405,15 @@ def pb_TR(doplot=False):
   global sample, freqlc, psdlc
   global lc, ncycle, tpmin
   global psd_period, psd_period_sqrt
+  global ns
   
-  TR = np.zeros(sample.shape[0])
-  TRobs = np.zeros(sample.shape[0])
+  TR = np.zeros(ns)
+  TRobs = np.zeros(ns)
   
   tspan = lc[-1, 0] - lc[0, 0]
-  idx = np.where((freqlc <= 1.0/tpmin) & (freqlc >= 1.0/(tspan/ncycle)))
-  for i in range(sample.shape[0]):
+  idx = np.where((freqlc <= 1.0/tpmin) & (freqlc>= 1.0/(tspan/ncycle)))
+  for k in range(ns):
+    i = np.random.randint(sample.shape[0])
     ts, fs = genlc_psd_data(sample[i, :])
 
     if flag_endmatch:
@@ -379,8 +426,8 @@ def pb_TR(doplot=False):
       psdtrue = (psd_power_law(freq, sample[i, :3]) + \
       psd_period(freq, sample[i, num_params_psd_sto:num_params_psd]))*flux_scale**2
       
-    TR[i] = 2.0*np.max(psds[idx[0]]/psdtrue[idx[0]])
-    TRobs[i] = 2.0*np.max(psdlc[idx[0]]/psdtrue[idx[0]])
+    TR[k] = 2.0*np.max(psds[idx[0]]/psdtrue[idx[0]])
+    TRobs[k] = 2.0*np.max(psdlc[idx[0]]/psdtrue[idx[0]])
     
     #plt.plot(freq, psds)
     #plt.plot(freq, psdtrue)
@@ -391,7 +438,7 @@ def pb_TR(doplot=False):
     #plt.yscale('log')
     #plt.show()
   
-  pb = np.sum(TR>TRobs)*1.0/sample.shape[0]
+  pb = np.sum(TR>TRobs)*1.0/ns
   print "TR:", pb
   
   if doplot:
@@ -409,6 +456,7 @@ def pb_TR(doplot=False):
 def pb_TLS(doplot=False):
   global lc
   global ls_freq
+  global ns
   
   ts = lc[:, 0]
   fs  = copy.copy(lc[:, 1])
@@ -422,19 +470,24 @@ def pb_TLS(doplot=False):
   print "LS data:", (period_obs, lspmax_obs)
 
   TLS_obs = lspmax_obs
-  TLS = np.zeros(sample.shape[0])
+  TLS = np.zeros(ns)
   
-  for i in range(sample.shape[0]):
+  for k in range(ns):
+    i = np.random.randint(sample.shape[0])
     ts, fs = genlc_psd_data(sample[i, :])
     if flag_endmatch:
       fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
     lsp = LombScargle(ts, fs).power(ls_freq, normalization='standard')
     idxmax = np.argmax(lsp)
     period = 1.0/ls_freq[idxmax]/365.0
-    TLS[i] = lsp[idxmax]
+    TLS[k] = lsp[idxmax]
+
+    #plt.plot(1.0/ls_freq, lsp)
+    #plt.plot(1.0/ls_freq, lsp_data)
+    #plt.show()
    
     
-  pb_TLS = np.sum(TLS>TLS_obs)*1.0/sample.shape[0]
+  pb_TLS = np.sum(TLS>TLS_obs)*1.0/ns
   print "TLS:", pb_TLS
   
   if doplot:
@@ -452,6 +505,7 @@ def pb_TLS(doplot=False):
 def pb_TPDM(doplot=False):
   global lc, sample
   global pdm_scan
+  global ns
   
   ts = lc[:, 0]
   fs  = copy.copy(lc[:, 1])
@@ -460,22 +514,27 @@ def pb_TPDM(doplot=False):
     fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
   
   P = pyPDM.PyPDM(ts, fs)
-  fpdm, tpdm = P.pdmEquiBinCover(5, 5, pdm_scan)
-  idxmin = np.argmin(tpdm)
-  print "PDM:", fpdm[idxmin], tpdm[idxmin]
+  fpdm, tpdm_data = P.pdmEquiBinCover(5, 5, pdm_scan)
+  idxmin = np.argmin(tpdm_data)
+  print "PDM:", fpdm[idxmin], tpdm_data[idxmin]
   
-  TPDM_obs = 1.0 - tpdm[idxmin]
-  TPDM = np.zeros(sample.shape[0])
+  TPDM_obs = 1.0 - tpdm_data[idxmin]
+  TPDM = np.zeros(ns)
   
-  for i in range(sample.shape[0]):
+  for k in range(ns):
+    i = np.random.randint(sample.shape[0])
     ts, fs = genlc_psd_data(sample[i, :])
     fs -= ((fs[-1] - fs[0])/(ts[-1] - ts[0]) * (ts - ts[0]) + fs[0])
     P = pyPDM.PyPDM(ts, fs)
     fpdm, tpdm = P.pdmEquiBinCover(5, 5, pdm_scan)
     idxmin = np.argmin(tpdm)
-    TPDM[i] = 1.0 - tpdm[idxmin]
+    TPDM[k] = 1.0 - tpdm[idxmin]
+
+    #plt.plot(fpdm, tpdm)
+    #plt.plot(fpdm, tpdm_data)
+    #plt.show()
   
-  pb_TPDM = np.sum(TPDM>TPDM_obs)*1.0/sample.shape[0]
+  pb_TPDM = np.sum(TPDM>TPDM_obs)*1.0/ns
   print "TPDM:", pb_TPDM
   
   if doplot:
@@ -487,6 +546,16 @@ def pb_TPDM(doplot=False):
     
   return 
   
+
+def test_genlc():
+  ts, fs = genlc(sample[0, :])
+  plt.plot(ts, fs)
+
+  recon = np.loadtxt("data/recon_all.txt")
+  offset = recon.shape[0]/sample.shape[0]
+  plt.plot(recon[:offset, 0], recon[:offset, 1])
+
+  plt.show()
   
 if __name__=="__main__":
   global sample, lc, freqlc, psdlc
@@ -496,8 +565,10 @@ if __name__=="__main__":
   global pdm_scan, ls_freq, ncycle, tpmin
   global psd_period, psd_period_sqrt
   global flag_endmatch
+  global ns
   
-  ncycle = 1.5
+  ns = 1000
+  ncycle = 3.
   tpmin = 100.0
   flag_endmatch = True
   print flag_endmatch
@@ -528,7 +599,7 @@ if __name__=="__main__":
   tspan = lc[-1, 0] - lc[0, 0]
   print "Tspan:", tspan/365.0
   ls_freq = np.logspace(np.log10(1.0/tpmin), np.log10(1.0/(tspan/ncycle)), 500)
-  pdm_scan = pyPDM.Scanner(minVal=100.0, maxVal=tspan/ncycle, dVal=10.0, mode="period")
+  pdm_scan = pyPDM.Scanner(minVal=tpmin, maxVal=tspan/ncycle, dVal=(tspan/ncycle-tpmin)/500, mode="period")
   
   if num_params_psd_per == 0:
     nd_sim = sample.shape[1] - num_params_psd
@@ -536,6 +607,8 @@ if __name__=="__main__":
     nd_sim = ((sample.shape[1] - num_params_psd) * 2)//3
   
   print sample.shape[1], nd_sim, num_params_psd
+
+  #test_genlc()
 
   pbTR, TR, TR_obs = pb_TR(doplot=True)
   pbTLS, TLS, TLS_obs = pb_TLS(doplot=True)

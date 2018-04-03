@@ -855,11 +855,11 @@ int recon_init()
     var_range_model[i][0] = log(1.0e-10);  //Ap
     var_range_model[i++][1] = log(1.0e6);
 
-    var_range_model[i][0] = log(freq_limit_data_lower); //center
-    var_range_model[i++][1] = log(freq_limit_data_upper);
+    var_range_model[i][0] = log(freq_limit_data_lower*1.5); //center
+    var_range_model[i++][1] = log(0.01);
 
-    var_range_model[i][0] = log(1.0e-10);   //sigma
-    var_range_model[i++][1] = log(1.0e6);
+    var_range_model[i][0] = log(1.0e-6);   //sigma
+    var_range_model[i++][1] = log(freq_limit_data_upper);
   }
   
   var_range_model[i][0] = -100.0;  //zero-frequency power
