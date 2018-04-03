@@ -381,7 +381,8 @@ def load_param():
   fp = open("param", "r")
   for line in fp.readlines():
     line = line.lstrip()
-    line = line.rstrip() + "#"
+    line = line.rstrip() + "  #"
+    line = line.lstrip()
     if line[0] is not '#':
       arr = line.split()
       parset[arr[0]] = arr[1]
