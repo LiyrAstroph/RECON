@@ -1,7 +1,7 @@
 # RECON
 A method for measuring spectral power and reconstructing time series in active galactic nuclei
 
-reference: Yan-Rong Li & Jian-Min Wang, MNRAS Letter in press, [arXiv: 1802.07958](https://arxiv.org/abs/1802.07958)
+reference: Yan-Rong Li & Jian-Min Wang, 2018, MNRAS Letter 476, 55, [NASA ADS Link](http://adsabs.harvard.edu/abs/2018MNRAS.476L..55L)
 
 # Compiling
 To compile ``RECON``, the following third-party packages are required:
@@ -102,7 +102,7 @@ PSDArg          1.0e-3:2.5:0.0                # type 0, single power-law:  A:alp
 ``RECON`` employs diffusive nested sampling technique (DNest; Brewer et al. 2011, Stat. Comput. 21, 649) to generate MCMC sample. The configuration for DNest is specified in file ``OPTIONS``. 
 
 # An Exemplary Case
-Application to the 5100A light curve of NGC 5548, see arXiv: 1802.07958.
+Application to the 5100A light curve of NGC 5548, see Yan-Rong Li & Jian-Min Wang, 2018, MNRAS Letter 476, 55.
 ![Application to the 5100A light curve of NGC 5548](https://github.com/liyropt/MyGithubPic/blob/master/ngc5548_lc_github.jpg)
 
 **A more detailed usage guideline is coming.**
