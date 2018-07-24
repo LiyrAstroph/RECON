@@ -58,7 +58,7 @@ double log_likelihoods_cal_restart_recon(const void *model);
 double log_likelihoods_cal_recon_exam(const void *model);
 double perturb_recon(void *model);
 int get_num_params_recon();
-void restart_clouds_recon(int iflag);
+void restart_action_recon(int iflag);
 
 void (*print_particle)(FILE *fp, const void *model);
 void (*from_prior)(void *model);
@@ -67,7 +67,7 @@ double (*log_likelihoods_cal_initial)(const void *model);
 double (*log_likelihoods_cal_restart)(const void *model);
 double (*perturb)(void *model);
 int (*get_num_params)();
-void (*restart_clouds)(int iflag);
+void (*restart_action)(int iflag);
 
 double (*psdfunc)(double, double *);
 double (*psdfunc_sqrt)(double, double *);

@@ -228,7 +228,7 @@ int recon_init()
   perturb = perturb_recon;
   print_particle = print_particle_recon;
   get_num_params = get_num_params_recon;
-  restart_clouds = restart_clouds_recon;
+  restart_action = restart_action_recon;
 
   if(recon_flag_prior_exam == 0)
   {
@@ -683,7 +683,7 @@ int recon_init()
     nd_sim = parset.nd_sim * W * V;
 
     freq_limit_data_lower = 1.0/(nd_sim * DT/W);
-    freq_limit_data_upper = 1.0/(DT/W);
+    freq_limit_data_upper = 1.0/(DT/W)/2.0;
   }
   else
   {
@@ -774,7 +774,7 @@ int recon_init()
     }
 
     freq_limit_data_lower = 1.0/(time_data[ndata-1] - time_data[0]);
-    freq_limit_data_upper = ndata/(time_data[ndata-1] - time_data[0]);
+    freq_limit_data_upper = ndata/(time_data[ndata-1] - time_data[0])/2.0;
   }
 
   num_recon = nd_sim;
@@ -1182,7 +1182,7 @@ int get_num_params_recon()
   return num_params;
 }
 
-void restart_clouds_recon(int iflag)
+void restart_action_recon(int iflag)
 {
   return;
 }
