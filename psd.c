@@ -235,7 +235,7 @@ void psd_fit_check(double *freq, double *psd, int nf)
   printf("# Single power-law PSD fit, slope: %f.\n", c1);
   if( -c1 > 1.8 && -c1 < 2.2)
   {
-    printf("# **** Leakage WARNING! ****\n", c1);
+    printf("# **** Leakage WARNING! ****\n");
   }
 
   strcpy(str1, parset.file_name);
