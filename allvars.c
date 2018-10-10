@@ -40,7 +40,6 @@ int num_params, num_params_psd, num_recon;
 double **par_range_model, **var_range_model, *par_fix_val;
 int *par_fix;
 
-int which_particle_update, which_parameter_update;
 int which_level_update, num_particles;
 unsigned long long int which_mcmc_steps;
 int *perturb_accept;

@@ -22,6 +22,9 @@
 #include "allvars.h"
 #include "proto.h"
 
+// function set for DNest.
+DNestFptrSet *fptrset;
+
 int recon()
 {
   int i, argc=0, narg=9;
@@ -77,7 +80,7 @@ int recon()
   {
     if(recon_flag_psd != 1)
     {
-      dnest(argc, argv);
+      dnest(argc, argv, fptrset, num_params);
       recon_postproc();
     }
   }
@@ -102,6 +105,7 @@ int recon_postproc()
     FILE *fp, *fcon, *fcon_all, *fcon_mean;
 
     char posterior_sample_file[200];
+    int size_of_modeltype = num_params * sizeof(double);
 
     get_posterior_sample_file(options_file, posterior_sample_file);
 
@@ -202,7 +206,7 @@ int recon_postproc()
     }
     for(j=0; j<nd_sim; j++)
     {
-      fprintf(fcon_mean, "%f %f %f\n", time_sim[j], flux_sim_mean[j]*flux_scale+flux_mean, err_sim_mean[j]*flux_scale);
+      fprintf(fcon_mean, "%f %e %e\n", time_sim[j], flux_sim_mean[j]*flux_scale+flux_mean, err_sim_mean[j]*flux_scale);
     }
 
     fclose(fp);
@@ -222,25 +226,26 @@ int recon_init()
   char fname[200];
   int i;
   double Tall, Tmin, Tmax;
+ 
+  fptrset = dnest_malloc_fptrset();
 
   /* setup functions used for dnest*/
-  from_prior = from_prior_recon;
-  perturb = perturb_recon;
-  print_particle = print_particle_recon;
-  get_num_params = get_num_params_recon;
-  restart_action = restart_action_recon;
+  fptrset->from_prior = from_prior_recon;
+  fptrset->perturb = perturb_recon;
+  fptrset->print_particle = print_particle_recon;
+  fptrset->restart_action = restart_action_recon;
 
   if(recon_flag_prior_exam == 0)
   {
-    log_likelihoods_cal = log_likelihoods_cal_recon;
-    log_likelihoods_cal_initial = log_likelihoods_cal_initial_recon;
-    log_likelihoods_cal_restart = log_likelihoods_cal_restart_recon;
+    fptrset->log_likelihoods_cal = log_likelihoods_cal_recon;
+    fptrset->log_likelihoods_cal_initial = log_likelihoods_cal_initial_recon;
+    fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_restart_recon;
   }
   else
   {
-    log_likelihoods_cal = log_likelihoods_cal_recon_exam;
-    log_likelihoods_cal_initial = log_likelihoods_cal_recon_exam;
-    log_likelihoods_cal_restart = log_likelihoods_cal_recon_exam;
+    fptrset->log_likelihoods_cal = log_likelihoods_cal_recon_exam;
+    fptrset->log_likelihoods_cal_initial = log_likelihoods_cal_recon_exam;
+    fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_recon_exam;
   }
 
   roottask = 0;
@@ -784,7 +789,6 @@ int recon_init()
   num_params_psd = parset.num_params_psd;
 
   num_params = num_recon + num_params_psd;
-  size_of_modeltype = num_params * sizeof(double);
 
   var_range_model = malloc((num_params_psd+2)*sizeof(double *));
   for(i=0; i<num_params_psd+2; i++)
@@ -934,9 +938,14 @@ int recon_init()
   return 0;
 }
 
+/*
+ * Finalize recon.
+ */
 int recon_end()
 {
   int i;
+ 
+  dnest_free_fptrset(fptrset);
 
   fftw_destroy_plan(pfft);
 
@@ -971,6 +980,9 @@ int recon_end()
   return 0;
 }
 
+/*
+ * Generate a light curve for a given model.
+ */
 int genlc(const void *model)
 {
   int i;
@@ -1129,8 +1141,6 @@ double perturb_recon(void *model)
       which = dnest_rand_int(num_recon) + num_params_psd;
   }while(par_fix[which] == 1);
 
-  which_parameter_update = which;
-
   /* level-dependent width */
   if(recon_flag_limits==0)
   {
@@ -1138,6 +1148,7 @@ double perturb_recon(void *model)
   }
   else
   {
+    which_level_update = dnest_get_which_level_update();
     which_level = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
 
     if( which_level > 0)
@@ -1417,7 +1428,7 @@ void sim()
   }
   
 
-  model = malloc(size_of_modeltype);
+  model = malloc(num_params * sizeof(double));
   
   pm = (double *)model;
 
@@ -1518,7 +1529,7 @@ void test()
     gsl_rng_set(gsl_r, time(NULL)+thistask*10);
   }
 
-  model = malloc(size_of_modeltype);
+  model = malloc(num_params * sizeof(double));
   
   pm = (double *)model;
 

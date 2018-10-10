@@ -43,12 +43,6 @@ extern int num_params, num_params_psd, num_recon;
 extern double **par_range_model, **var_range_model, *par_fix_val;
 extern int *par_fix;
 
-
-/* size of model type, defined in dnest */
-extern int size_of_modeltype;
-
-
-extern int which_particle_update, which_parameter_update;
 extern int which_level_update, num_particles;
 extern unsigned long long int which_mcmc_steps;
 extern int *perturb_accept;
