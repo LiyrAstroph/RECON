@@ -80,7 +80,7 @@ int recon()
   {
     if(recon_flag_psd != 1)
     {
-      dnest(argc, argv, fptrset, num_params);
+      dnest(argc, argv, fptrset, num_params, options_file);
       recon_postproc();
     }
   }
