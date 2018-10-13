@@ -1169,19 +1169,19 @@ double perturb_recon(void *model)
   if(which < num_params_psd + 1)
   {
     pm[which] += dnest_randh() * width;
-    wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
+    dnest_wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
   }
   else if(which < num_params_psd + nd_sim)
   {
     logH -= (-0.5*pow(pm[which], 2.0) );
     pm[which] += dnest_randh() * width;
-    wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
+    dnest_wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
     logH += (-0.5*pow(pm[which], 2.0) );
   }
   else
   {
     pm[which] += dnest_randh() * width;
-    wrap(&(pm[which]), 0.0, 1.0);
+    dnest_wrap(&(pm[which]), 0.0, 1.0);
   }
 
   return logH;
