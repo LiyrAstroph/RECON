@@ -16,8 +16,9 @@
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <mpi.h>
 
-#include <dnestvars.h>
+#include "dnestvars.h"
 
 #include "allvars.h"
 #include "proto.h"
@@ -89,6 +90,7 @@ int recon()
 
   for(i=0; i<narg; i++)
     free(argv[i]);
+
   free(argv);
   
   return 0;
@@ -238,8 +240,8 @@ int recon_init()
   if(recon_flag_prior_exam == 0)
   {
     fptrset->log_likelihoods_cal = log_likelihoods_cal_recon;
-    fptrset->log_likelihoods_cal_initial = log_likelihoods_cal_initial_recon;
-    fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_restart_recon;
+    fptrset->log_likelihoods_cal_initial = log_likelihoods_cal_recon;
+    fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_recon;
   }
   else
   {
@@ -250,418 +252,492 @@ int recon_init()
 
   roottask = 0;
 
-  if(thistask == roottask)
+  if(parset.periodpsd_proftype == 1)
   {
-    if(parset.periodpsd_proftype == 1)
-    {
-      psdfunc_period = psd_period_lorentz;
-      psdfunc_period_sqrt = psd_period_sqrt_lorentz;
-    }
-    else
-    {
-      psdfunc_period = psd_period_gaussian;
-      psdfunc_period_sqrt = psd_period_sqrt_gaussian;
-    }
+    psdfunc_period = psd_period_lorentz;
+    psdfunc_period_sqrt = psd_period_sqrt_lorentz;
+  }
+  else
+  {
+    psdfunc_period = psd_period_gaussian;
+    psdfunc_period_sqrt = psd_period_sqrt_gaussian;
+  }
 
-    switch(parset.psd_type)
-    {
-      case 0: // single power-law
-        psdfunc = psd_power_law;
-        psdfunc_sqrt = psd_power_law_sqrt;
-        parset.num_params_psd = 3;
+  switch(parset.psd_type)
+  {
+    case 0: // single power-law
+      psdfunc = psd_power_law;
+      psdfunc_sqrt = psd_power_law_sqrt;
+      parset.num_params_psd = 3;
 
-        if(recon_flag_sim == 1)
+      if(recon_flag_sim == 1)
+      {
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+        
+        if(parset.psd_arg[0] < 0.0)
         {
-          sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
-        
-        
-          if(parset.psd_arg[0] < 0.0)
+          if(thistask == roottask)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[0] == 0.0)
-          {
-            parset.psd_arg[0] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[0] = log(parset.psd_arg[0]);
-          }
+        }
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
         
-          if(parset.psd_arg[2] < 0.0)
+        if(parset.psd_arg[2] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 3rd PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[2] == 0.0)
-          {
-            parset.psd_arg[2] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[2] = log(parset.psd_arg[2]);
-          }
         }
-        break;
+        else if(parset.psd_arg[2] == 0.0)
+        {
+          parset.psd_arg[2] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
+      }
+      break;
   
-      case 1: // damped random walk
-        psdfunc = psd_drw;
-        psdfunc_sqrt = psd_drw_sqrt;
-        parset.num_params_psd = 3;
+    case 1: // damped random walk
+      psdfunc = psd_drw;
+      psdfunc_sqrt = psd_drw_sqrt;
+      parset.num_params_psd = 3;
 
-        if(recon_flag_sim == 1)
+      if(recon_flag_sim == 1)
+      {
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+
+        if(parset.psd_arg[0] < 0.0)
         {
-          sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
-
-          if(parset.psd_arg[0] < 0.0)
+          if(thistask == roottask)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[0] == 0.0)
-          {
-            parset.psd_arg[0] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[0] = log(parset.psd_arg[0]);
-          }
+        }
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
 
-          if(parset.psd_arg[1] <=0.0)
+        if(parset.psd_arg[1] <=0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 2nd PSDArg.\n");
             exit(0);
           }
-          else
-          {
-            parset.psd_arg[1] = log(parset.psd_arg[1]);
-          }
+        }
+        else
+        {
+          parset.psd_arg[1] = log(parset.psd_arg[1]);
+        }
 
-          if(parset.psd_arg[2] < 0.0)
+        if(parset.psd_arg[2] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 3rd PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[2] == 0.0)
-          {
-            parset.psd_arg[2] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[2] = log(parset.psd_arg[2]);
-          }
         }
-
-        break;
-      
-      case 2: // bending power-law
-        psdfunc = psd_bending_power_law;
-        psdfunc_sqrt = psd_bending_power_law_sqrt;
-        
-        parset.num_params_psd = 5;
-
-        if(recon_flag_sim == 1)
+        else if(parset.psd_arg[2] == 0.0)
         {
-          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
+          parset.psd_arg[2] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
+      }
+
+      break;
+      
+    case 2: // bending power-law
+      psdfunc = psd_bending_power_law;
+      psdfunc_sqrt = psd_bending_power_law_sqrt;
+        
+      parset.num_params_psd = 5;
+
+      if(recon_flag_sim == 1)
+      {
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
                                                             &parset.psd_arg[3], &parset.psd_arg[4]);
-
-          if(parset.psd_arg[0] < 0.0)
+        if(parset.psd_arg[0] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[0] == 0.0)
-          {
-            parset.psd_arg[0] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[0] = log(parset.psd_arg[0]);
-          }
+        }
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
 
-          if(parset.psd_arg[3] <=0.0)
+        if(parset.psd_arg[3] <=0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 4th PSDArg.\n");
             exit(0);
           }
-          else
-          {
-            parset.psd_arg[3] = log(parset.psd_arg[3]);
-          }
+        }
+        else
+        {
+          parset.psd_arg[3] = log(parset.psd_arg[3]);
+        }
 
-          if(parset.psd_arg[4] < 0.0)
+        if(parset.psd_arg[4] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 5th PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[4] == 0.0)
-          {
-            parset.psd_arg[4] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[4] = log(parset.psd_arg[4]);
-          }
         }
-        break;
-
-      case 3: // single power-law and periodic
-        psdfunc = psd_power_law;
-        psdfunc_sqrt = psd_power_law_sqrt;
-        parset.num_params_psd = 6;
-        if(recon_flag_sim == 1)
+        else if(parset.psd_arg[4] == 0.0)
         {
-          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
-                  &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
+          parset.psd_arg[4] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[4] = log(parset.psd_arg[4]);
+        }
+      }
+      break;
 
-          if(parset.psd_arg[0] < 0.0)
+    case 3: // single power-law and periodic
+      psdfunc = psd_power_law;
+      psdfunc_sqrt = psd_power_law_sqrt;
+      parset.num_params_psd = 6;
+      if(recon_flag_sim == 1)
+      {
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
+                &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
+
+        if(parset.psd_arg[0] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[0] == 0.0)
-          {
-            parset.psd_arg[0] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[0] = log(parset.psd_arg[0]);
-          }
+        }
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
 
-          if(parset.psd_arg[2] < 0.0)
+        if(parset.psd_arg[2] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 3rd PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[2] == 0.0)
-          {
-            parset.psd_arg[2] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[2] = log(parset.psd_arg[2]);
-          }
+        }
+        else if(parset.psd_arg[2] == 0.0)
+        {
+          parset.psd_arg[2] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
 
-          if(parset.psd_arg[3] < 0.0)
+        if(parset.psd_arg[3] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 4th PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[3] == 0.0)
-          {
-            parset.psd_arg[3] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[3] = log(parset.psd_arg[3]);
-          }
-          
-          if(parset.psd_arg[4] <= 0.0)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-          else
-          {
-            parset.psd_arg[4] = log(parset.psd_arg[4]);
-          }
-
-          if(parset.psd_arg[5] <= 0.0)
+        }
+        else if(parset.psd_arg[3] == 0.0)
+        {
+          parset.psd_arg[3] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[3] = log(parset.psd_arg[3]);
+        }
+        
+        if(parset.psd_arg[4] <= 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 5th PSDArg.\n");
             exit(0);
-          }
-          else
-          {
-            parset.psd_arg[5] = log(parset.psd_arg[5]);
           }
         }
-        break;
-      
-      case 4:  // drw + periodic
-        psdfunc = psd_drw;
-        psdfunc_sqrt = psd_drw_sqrt;
-        parset.num_params_psd = 6;
-
-        if(recon_flag_sim == 1)
+        else
         {
-          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2], 
-                                                    &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
+          parset.psd_arg[4] = log(parset.psd_arg[4]);
+        }
 
-          if(parset.psd_arg[0] < 0.0)
+        if(parset.psd_arg[5] <= 0.0)
+        {
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+        }
+        else
+        {
+          parset.psd_arg[5] = log(parset.psd_arg[5]);
+        }
+      }
+      break;
+    
+    case 4:  // drw + periodic
+      psdfunc = psd_drw;
+      psdfunc_sqrt = psd_drw_sqrt;
+      parset.num_params_psd = 6;
+
+      if(recon_flag_sim == 1)
+      {
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2], 
+                                                  &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
+
+        if(parset.psd_arg[0] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[0] == 0.0)
-          {
-            parset.psd_arg[0] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[0] = log(parset.psd_arg[0]);
-          }
+        }
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
 
-          if(parset.psd_arg[1] <=0.0)
+        if(parset.psd_arg[1] <=0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 2nd PSDArg.\n");
             exit(0);
           }
-          else
-          {
-            parset.psd_arg[1] = log(parset.psd_arg[1]);
-          }
+        }
+        else
+        {
+          parset.psd_arg[1] = log(parset.psd_arg[1]);
+        }
 
-          if(parset.psd_arg[2] < 0.0)
+        if(parset.psd_arg[2] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 3rd PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[2] == 0.0)
-          {
-            parset.psd_arg[2] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[2] = log(parset.psd_arg[2]);
-          }
+        }
+        else if(parset.psd_arg[2] == 0.0)
+        {
+          parset.psd_arg[2] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
 
-          if(parset.psd_arg[3] < 0.0)
+        if(parset.psd_arg[3] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 4th PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[3] == 0.0)
-          {
-            parset.psd_arg[3] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[3] = log(parset.psd_arg[3]);
-          }
-          
-          if(parset.psd_arg[4] <= 0.0)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-          else
-          {
-            parset.psd_arg[4] = log(parset.psd_arg[4]);
-          }
-
-          if(parset.psd_arg[5] <= 0.0)
+        }
+        else if(parset.psd_arg[3] == 0.0)
+        {
+          parset.psd_arg[3] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[3] = log(parset.psd_arg[3]);
+        }
+        
+        if(parset.psd_arg[4] <= 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 5th PSDArg.\n");
             exit(0);
-          }
-          else
-          {
-            parset.psd_arg[5] = log(parset.psd_arg[5]);
           }
         }
-
-        break;
-
-      case 5:   // bending power-law + periodic 
-        psdfunc = psd_bending_power_law;
-        psdfunc_sqrt = psd_bending_power_law_sqrt;
-        
-        parset.num_params_psd = 8;
-
-        if(recon_flag_sim == 1)
+        else
         {
-          sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
-                  &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5], &parset.psd_arg[6], &parset.psd_arg[7]);
+          parset.psd_arg[4] = log(parset.psd_arg[4]);
+        }
 
-          if(parset.psd_arg[0] < 0.0)
+        if(parset.psd_arg[5] <= 0.0)
+        {
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+        }
+        else
+        {
+          parset.psd_arg[5] = log(parset.psd_arg[5]);
+        }
+      }
+
+      break;
+
+    case 5:   // bending power-law + periodic 
+      psdfunc = psd_bending_power_law;
+      psdfunc_sqrt = psd_bending_power_law_sqrt;
+      
+      parset.num_params_psd = 8;
+
+      if(recon_flag_sim == 1)
+      {
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
+                &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5], &parset.psd_arg[6], &parset.psd_arg[7]);
+
+        if(parset.psd_arg[0] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 1st PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[0] == 0.0)
-          {
-            parset.psd_arg[0] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[0] = log(parset.psd_arg[0]);
-          }
+        }
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
 
-          if(parset.psd_arg[3] <=0.0)
+        if(parset.psd_arg[3] <=0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 4th PSDArg.\n");
             exit(0);
           }
-          else
-          {
-            parset.psd_arg[3] = log(parset.psd_arg[3]);
-          }
+        }
+        else
+        {
+          parset.psd_arg[3] = log(parset.psd_arg[3]);
+        }
 
-          if(parset.psd_arg[4] < 0.0)
+        if(parset.psd_arg[4] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 5th PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[4] == 0.0)
-          {
-            parset.psd_arg[4] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[4] = log(parset.psd_arg[4]);
-          }
+        }
+        else if(parset.psd_arg[4] == 0.0)
+        {
+          parset.psd_arg[4] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[4] = log(parset.psd_arg[4]);
+        }
 
-          if(parset.psd_arg[5] < 0.0)
+        if(parset.psd_arg[5] < 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 6th PSDArg.\n");
             exit(0);
           }
-          else if(parset.psd_arg[5] == 0.0)
-          {
-            parset.psd_arg[5] = -DBL_MAX;
-          }
-          else
-          {
-            parset.psd_arg[5] = log(parset.psd_arg[5]);
-          }
-          
-          if(parset.psd_arg[6] <= 0.0)
+        }
+        else if(parset.psd_arg[5] == 0.0)
+        {
+          parset.psd_arg[5] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[5] = log(parset.psd_arg[5]);
+        }
+        
+        if(parset.psd_arg[6] <= 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 7th PSDArg.\n");
             exit(0);
           }
-          else
-          {
-            parset.psd_arg[6] = log(parset.psd_arg[6]);
-          }
+        }
+        else
+        {
+          parset.psd_arg[6] = log(parset.psd_arg[6]);
+        }
 
-          if(parset.psd_arg[7] <= 0.0)
+        if(parset.psd_arg[7] <= 0.0)
+        {
+          if(thistask == roottask)
           {
             printf("# Incorrect 8th PSDArg.\n");
             exit(0);
           }
-          else
-          {
-            parset.psd_arg[7] = log(parset.psd_arg[7]);
-          }
-
         }
-        break;
-
-      default:
-        psdfunc = psd_power_law;
-        psdfunc_sqrt = psd_power_law_sqrt;
-        parset.num_params_psd = 3;
-        if(recon_flag_sim == 1)
+        else
         {
-          parset.psd_arg[0] = log(1.0e0);
-          parset.psd_arg[1] = 1.5;
-          parset.psd_arg[2] = -DBL_MAX;
+          parset.psd_arg[7] = log(parset.psd_arg[7]);
         }
-        break;
-    }
+
+      }
+      break;
+
+    default:
+      psdfunc = psd_power_law;
+      psdfunc_sqrt = psd_power_law_sqrt;
+      parset.num_params_psd = 3;
+      if(recon_flag_sim == 1)
+      {
+        parset.psd_arg[0] = log(1.0e0);
+        parset.psd_arg[1] = 1.5;
+        parset.psd_arg[2] = -DBL_MAX;
+      }
+      break;
+  }
+
+  if(thistask == roottask)
+  {
     sprintf(fname, "%s/data/recon_info.txt", parset.file_dir);
     finfo = fopen(fname, "w");
     if(finfo == NULL)
@@ -671,12 +747,14 @@ int recon_init()
     }
   }
 
-  MPI_Bcast(&psdfunc, sizeof(psdfunc), MPI_BYTE, roottask, MPI_COMM_WORLD);
+  /*MPI_Bcast(&psdfunc, sizeof(psdfunc), MPI_BYTE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&psdfunc_sqrt, sizeof(psdfunc_sqrt), MPI_BYTE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&psdfunc_period, sizeof(psdfunc_period), MPI_BYTE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&psdfunc_period_sqrt, sizeof(psdfunc_period_sqrt), MPI_BYTE, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&parset.num_params_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(parset.psd_arg, parset.num_params_psd, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+
+  printf("%d %d\n", thistask, &psdfunc);*/
 
   /* fft */
   if(recon_flag_sim==1)
@@ -1002,7 +1080,7 @@ int genlc(const void *model)
   }
   fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1];
   fft_work[nd_sim/2][1] = 0.0;
-
+  
   for(i=1; i<nd_sim/2; i++)
   {
     freq = i*1.0/(nd_sim * DT);
@@ -1013,7 +1091,7 @@ int genlc(const void *model)
   freq = nd_sim/2*1.0/(nd_sim * DT);
   psd_sqrt = psdfunc_sqrt(freq, arg);
   fft_work[nd_sim/2][0] *= psd_sqrt;
-
+  
   // add periodic component
   if(parset.psd_type >=3)
   {
@@ -1047,7 +1125,7 @@ double prob_recon(const void *model)
   int i;
 
   genlc(model);
-
+  
   gsl_interp_init(gsl_linear_sim, time_sim, flux_sim, nd_sim);
   
   for(i=0; i<ndata; i++)
@@ -1100,20 +1178,6 @@ void print_particle_recon(FILE *fp, const void *model)
 }
 
 double log_likelihoods_cal_recon(const void *model)
-{
-  double logL;
-  logL = prob_recon(model);
-  return logL;
-}
-
-double log_likelihoods_cal_initial_recon(const void *model)
-{
-  double logL;
-  logL = prob_recon(model);
-  return logL;
-}
-
-double log_likelihoods_cal_restart_recon(const void *model)
 {
   double logL;
   logL = prob_recon(model);

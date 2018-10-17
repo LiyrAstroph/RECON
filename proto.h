@@ -12,6 +12,7 @@
 int recon_init();
 int recon_end();
 int recon();
+int recon_run(int argc, char **argv);
 int genlc(const void *model);
 int get_line_number(char *fname);
 void get_num_particles(char *fname);
@@ -53,8 +54,6 @@ int remove_restart_file();
 void from_prior_recon(void *model);
 void print_particle_recon(FILE *fp, const void *model);
 double log_likelihoods_cal_recon(const void *model);
-double log_likelihoods_cal_initial_recon(const void *model);
-double log_likelihoods_cal_restart_recon(const void *model);
 double log_likelihoods_cal_recon_exam(const void *model);
 double perturb_recon(void *model);
 void restart_action_recon(int iflag);

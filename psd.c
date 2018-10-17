@@ -274,17 +274,16 @@ double psd_drw(double fk, double *arg)
   //if(fk < freq_limit_sim)
   //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
   //else
-    return A/(1.0 + pow(fk/fknee, 2.0)) + cnoise;
+  return A/(1.0 + pow(fk/fknee, 2.0)) + cnoise;
 }
 
 double psd_drw_sqrt(double fk, double *arg)
 {
   double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
-
   //if(fk < freq_limit_sim)
   //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
   //else
-    return sqrt(A/(1.0 + pow(fk/fknee, 2.0))+ cnoise);
+  return sqrt(A/(1.0 + pow(fk/fknee, 2.0))+ cnoise);
 }
 
 double psd_power_law(double fk, double *arg)

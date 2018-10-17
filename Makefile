@@ -56,8 +56,10 @@ endif
 
 EXEC     = recon
 SRC      = ./
-OBJS     = $(SRC)/main.o $(SRC)/allvars.o $(SRC)/recon.o $(SRC)/system.o $(SRC)/help.o \
-           $(SRC)/read.o $(SRC)/psd.o
+OBJS     = $(SRC)/allvars.o $(SRC)/recon.o $(SRC)/system.o $(SRC)/help.o \
+           $(SRC)/read.o $(SRC)/psd.o $(SRC)/run.o
+
+OBJSALL =  $(SRC)/main.o $(OBJS)
  
 INCL     = Makefile proto.h allvars.h      
 
@@ -65,9 +67,10 @@ OPTIONS  = $(OPTIMIZE)
 CFLAGS   = $(OPTIONS) $(GSL_INCL) $(LAPACK_INCL) $(MPICHINCL) $(DNEST_INCL) $(FFTW_INCL)
 LIBS     = $(GSL_LIBS) $(LAPACK_LIBS) $(MPICHLIB) $(DNEST_LIBS) $(FFTW_LIBS)
 
-$(EXEC):$(OBJS)
+$(EXEC):$(OBJS) $(OBJSALL)
 	cd $(SRC)
-	$(CC) $(OBJS) $(LIBS) -o $@
+	$(CC) $(OBJSALL) $(LIBS) -o $@
+	$(CC) $(OPTIMIZE) $(CFLAGS) $(LIBS) -fPIC -shared -o librecon.so $(OBJS)
 
 $(OBJS): $(INCL)
 
