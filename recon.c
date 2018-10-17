@@ -26,10 +26,11 @@
 // function set for DNest.
 DNestFptrSet *fptrset;
 
-int recon()
+double recon()
 {
   int i, argc=0, narg=9;
   char **argv;
+  double logz;
   
   strcpy(options_file, "OPTIONS");
 
@@ -81,7 +82,7 @@ int recon()
   {
     if(recon_flag_psd != 1)
     {
-      dnest(argc, argv, fptrset, num_params, options_file);
+      logz = dnest(argc, argv, fptrset, num_params, options_file);
       recon_postproc();
     }
   }
@@ -93,7 +94,7 @@ int recon()
 
   free(argv);
   
-  return 0;
+  return logz;
 }
 
 

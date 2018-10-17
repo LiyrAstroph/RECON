@@ -44,5 +44,5 @@ cdef class cyrecon:
     return
 
   def run(self):
-    recon_run(self.argc, self.argv)
-    return
+    logz = recon_run(self.argc, self.argv)
+    return logz

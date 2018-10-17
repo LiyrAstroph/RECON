@@ -17,10 +17,11 @@
 #include "proto.h"
 
 
-int recon_run(int argc, char **argv)
+double recon_run(int argc, char **argv)
 {
   int opt;
   double t0=0.0, t1=0.0, dt;
+  double logz;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &thistask);
   MPI_Comm_size(MPI_COMM_WORLD, &totaltask);
@@ -166,7 +167,7 @@ int recon_run(int argc, char **argv)
   if(recon_flag_help == 0)
   {
     read_parset();
-    recon();
+    logz = recon();
   }
 
   if(thistask == roottask)
@@ -181,5 +182,5 @@ int recon_run(int argc, char **argv)
     printf("===============RECON==================\n");
   }
 
-  return 0;
+  return logz;
 }

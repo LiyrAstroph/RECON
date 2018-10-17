@@ -11,8 +11,8 @@
 
 int recon_init();
 int recon_end();
-int recon();
-int recon_run(int argc, char **argv);
+double recon();
+double recon_run(int argc, char **argv);
 int genlc(const void *model);
 int get_line_number(char *fname);
 void get_num_particles(char *fname);

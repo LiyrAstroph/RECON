@@ -1,7 +1,3 @@
-#
-# an example from the DNest4 package by Brendon J. Brewer, with minor modifications
-# 
-#
 
 from mpi4py import MPI
 import numpy as np
@@ -14,6 +10,8 @@ rank = comm.Get_rank()
 sample = cyrecon.cyrecon()
 
 # run sampler
-sample.run()
+logz = sample.run()
 
-comm.Barrier()
+if rank == 0:
+  print logz
+
