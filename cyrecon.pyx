@@ -18,8 +18,8 @@ cdef class cyrecon:
 
     # setup argc and argv
     cdef int i
-    self.argv = <char **>PyMem_Malloc(5*sizeof(char *))
-    for i in range(5):
+    self.argv = <char **>PyMem_Malloc(9*sizeof(char *))
+    for i in range(9):
       self.argv[i] = <char *>PyMem_Malloc(200*sizeof(char))
     
     self.argc = 0
@@ -29,6 +29,8 @@ cdef class cyrecon:
     self.argc += 1
     self.argv[self.argc] = 'resetart_dnest.txt'
     self.argc += 1
+    self.argv[self.argc] = '-l'
+    self.argc += 1
     self.argv[self.argc] = 'param'
     self.argc += 1
 
@@ -36,7 +38,7 @@ cdef class cyrecon:
 
   def __cdealloc__(self):
     cdef int i
-    for i in range(5):
+    for i in range(9):
       PyMem_Free(self.argv[i])
     
     PyMem_Free(self.argv)

@@ -23,11 +23,13 @@
 
 int main(int argc, char **argv)
 {
-
+  /* Initialize MPI */
   MPI_Init(&argc, &argv);
 
+  /* Run RECON */
   recon_run(argc, argv);
 
+  /* Finalize MPI */
   MPI_Finalize();
   return 0;
 }

@@ -120,8 +120,6 @@ double py_log_likelihood(void *params)
 {
   if (size_ == 0) return 0.0;
   
-  double *pm = (double *)params;
-  
   PyObject* c = get_npy_coords(params);
   
   // Call the Python method and get the Python return value.

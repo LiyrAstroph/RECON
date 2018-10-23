@@ -70,8 +70,8 @@ void read_parset()
     addr[nt] = &parset.flag_whitenoise;
     id[nt++] = INT;
 
-    strcpy(tag[nt], "PeriodPSDProfType");
-    addr[nt] = &parset.periodpsd_proftype;
+    strcpy(tag[nt], "PSDPeriodModel");
+    addr[nt] = &parset.psdperiod_model;
     id[nt++] = INT;
 
     strcpy(tag[nt], "FileSim");

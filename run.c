@@ -21,7 +21,7 @@ double recon_run(int argc, char **argv)
 {
   int opt;
   double t0=0.0, t1=0.0, dt;
-  double logz;
+  double logz=0.0;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &thistask);
   MPI_Comm_size(MPI_COMM_WORLD, &totaltask);

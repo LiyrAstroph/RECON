@@ -81,7 +81,7 @@ typedef struct
   double DT;
   int flag_endmatch;
   int flag_whitenoise;
-  int periodpsd_proftype;
+  int psdperiod_model;
 }PARSET;
 extern PARSET parset;
 

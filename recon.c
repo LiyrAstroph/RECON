@@ -253,7 +253,7 @@ int recon_init()
 
   roottask = 0;
 
-  if(parset.periodpsd_proftype == 1)
+  if(parset.psdperiod_model == 1)
   {
     psdfunc_period = psd_period_lorentz;
     psdfunc_period_sqrt = psd_period_sqrt_lorentz;
