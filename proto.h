@@ -15,7 +15,6 @@ double recon();
 double recon_run(int argc, char **argv);
 int genlc(const void *model);
 int get_line_number(char *fname);
-void get_num_particles(char *fname);
 void get_posterior_sample_file(char *fname, char *samplefile);
 int read_data(char *fname, int n, double *t, double *f, double *e);
 void set_par_range();

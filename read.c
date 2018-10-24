@@ -62,6 +62,10 @@ void read_parset()
     addr[nt] = &parset.str_psd_arg;
     id[nt++] = STRING;
 
+    strcpy(tag[nt], "Domain");
+    addr[nt] = &parset.flag_domain;
+    id[nt++] = INT;
+
     strcpy(tag[nt], "FlagEndMatch");
     addr[nt] = &parset.flag_endmatch;
     id[nt++] = INT;
@@ -182,3 +186,38 @@ void read_parset()
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
   return;
 }
+
+int read_data(char *fname, int n, double *t, double *f, double *e)
+{
+  FILE *fp;
+  int i;
+  char buf[200];
+  double slope;
+
+  fp = fopen(fname, "r");
+  if(fp==NULL)
+  {
+    printf("Cannot open file %s.\n", fname);
+    exit(0);
+  }
+
+  for(i=0; i<n; i++)
+  {
+    fgets(buf, 200, fp);
+    sscanf(buf, "%lf %lf %lf\n", &t[i], &f[i], &e[i]);
+  }
+  fclose(fp);
+
+  // end matching 
+  if(parset.flag_endmatch == 1)
+  {
+    slope = (f[n-1] - f[0])/(t[n-1] - t[0]);
+    for(i=0; i<n; i++)
+    {
+      f[i] -= (slope*(t[i] - t[0]));
+    }
+  }
+  
+  return 0;
+}
+

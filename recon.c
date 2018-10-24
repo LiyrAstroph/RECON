@@ -748,15 +748,6 @@ int recon_init()
     }
   }
 
-  /*MPI_Bcast(&psdfunc, sizeof(psdfunc), MPI_BYTE, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&psdfunc_sqrt, sizeof(psdfunc_sqrt), MPI_BYTE, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&psdfunc_period, sizeof(psdfunc_period), MPI_BYTE, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&psdfunc_period_sqrt, sizeof(psdfunc_period_sqrt), MPI_BYTE, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&parset.num_params_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(parset.psd_arg, parset.num_params_psd, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
-
-  printf("%d %d\n", thistask, &psdfunc);*/
-
   /* fft */
   if(recon_flag_sim==1)
   {
@@ -994,15 +985,6 @@ int recon_init()
   fft_work = (fftw_complex *)fftw_malloc( nd_sim * sizeof(fftw_complex));
 
   pfft = fftw_plan_dft_c2r_1d(nd_sim, fft_work, flux_sim, FFTW_MEASURE);
-
-  if(thistask == roottask)
-  {
-    get_num_particles(options_file);
-  }
-  MPI_Bcast(&num_particles, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-
-  perturb_accept = malloc(num_particles * sizeof(int));
-  
   
   if(thistask == roottask)
   {
@@ -1032,7 +1014,6 @@ int recon_end()
   gsl_interp_accel_free(gsl_acc_sim);
 
   fftw_free(fft_work);
-  free(perturb_accept);
   
   for(i=0; i<num_params_psd+2; i++)
   {
@@ -1291,33 +1272,6 @@ int get_line_number(char *fname)
 }
 
 /*!
- * get number of particles from the option file.
- */
-void get_num_particles(char *fname)
-{
-  FILE *fp;
-  char buf[200], buf1[200];
-  fp = fopen(fname, "r");
-  if(fp == NULL)
-  {
-    fprintf(stderr, "# Error: Cannot open file %s\n", fname);
-    exit(-1);
-  }
-
-  buf[0]='#';
-  while(buf[0]=='#')
-  {
-    fgets(buf, 200, fp);
-    if(sscanf(buf, "%s", buf1) < 1)  // a blank line
-    {
-      buf[0] = '#';
-    }
-  }
-  sscanf(buf, "%d", &num_particles);
-  fclose(fp);
-}
-
-/*!
  * get file name of posterior sample. 
  */
 void get_posterior_sample_file(char *fname, char *samplefile)
@@ -1378,39 +1332,6 @@ void get_posterior_sample_file(char *fname, char *samplefile)
   fclose(fp);
 }
 
-int read_data(char *fname, int n, double *t, double *f, double *e)
-{
-  FILE *fp;
-  int i;
-  char buf[200];
-  double slope;
-
-  fp = fopen(fname, "r");
-  if(fp==NULL)
-  {
-    printf("Cannot open file %s.\n", fname);
-    exit(0);
-  }
-
-  for(i=0; i<n; i++)
-  {
-    fgets(buf, 200, fp);
-    sscanf(buf, "%lf %lf %lf\n", &t[i], &f[i], &e[i]);
-  }
-  fclose(fp);
-
-  // end matching 
-  if(parset.flag_endmatch == 1)
-  {
-    slope = (f[n-1] - f[0])/(t[n-1] - t[0]);
-    for(i=0; i<n; i++)
-    {
-      f[i] -= (slope*(t[i] - t[0]));
-    }
-  }
-  
-  return 0;
-}
 
 /*!
  * this function set the parameter range.

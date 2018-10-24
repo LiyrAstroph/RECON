@@ -36,7 +36,7 @@ extern double *flux_sim_mean, *err_sim_mean;
 
 extern gsl_interp_accel *gsl_acc_sim;
 extern gsl_interp  *gsl_linear_sim;
-extern fftw_plan pfft;
+extern fftw_plan pfft, pfft_r2r;
 extern fftw_complex *fft_work;
 
 extern int num_params, num_params_psd, num_recon;
@@ -45,7 +45,6 @@ extern int *par_fix;
 
 extern int which_level_update, num_particles;
 extern unsigned long long int which_mcmc_steps;
-extern int *perturb_accept;
 extern double *limits;
 
 extern int recon_flag_postprc; 
@@ -79,6 +78,7 @@ typedef struct
   char file_sim[200];
   int nd_sim;
   double DT;
+  int flag_domain;
   int flag_endmatch;
   int flag_whitenoise;
   int psdperiod_model;

@@ -4,8 +4,8 @@ from setuptools.extension import Extension
 
 os.environ["CC"] = "mpicc"
 
-include_dirs = ["/home/liyropt/Projects/GIT/DNest","/home/liyropt/Projects/LCRecon/Code"]
-library_dirs = ["/home/liyropt/Projects/GIT/DNest","/home/liyropt/Projects/LCRecon/Code"]
+include_dirs = ["/home/liyropt/Projects/GIT/DNest","/home/liyropt/Projects/LCRecon/RECON"]
+library_dirs = ["/home/liyropt/Projects/GIT/DNest","/home/liyropt/Projects/LCRecon/RECON"]
 
 if os.name == 'nt':  # Windows, assumming MSVC compiler
   libraries = ['dnest']

@@ -33,7 +33,7 @@ double *flux_sim_mean, *err_sim_mean;
 gsl_interp_accel *gsl_acc_sim;
 gsl_interp  *gsl_linear_sim;
 
-fftw_plan pfft;
+fftw_plan pfft, pfft_r2r;
 fftw_complex *fft_work;
 
 int num_params, num_params_psd, num_recon;
@@ -42,8 +42,6 @@ int *par_fix;
 
 int which_level_update, num_particles;
 unsigned long long int which_mcmc_steps;
-int *perturb_accept;
-
 
 int recon_flag_postprc; 
 double recon_temperature;
