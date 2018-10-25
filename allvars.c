@@ -33,7 +33,7 @@ double *flux_sim_mean, *err_sim_mean;
 gsl_interp_accel *gsl_acc_sim;
 gsl_interp  *gsl_linear_sim;
 
-fftw_plan pfft, pfft_r2r;
+fftw_plan pfft;
 fftw_complex *fft_work;
 
 int num_params, num_params_psd, num_recon;

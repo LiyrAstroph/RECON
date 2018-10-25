@@ -2,7 +2,7 @@
 # lines beginning with '#' are regarded as comments and are neglected
 # 
 
-PSDType         3           # 0-5; psd type, 0: single power-law
+PSDType         0           # 0-5; psd type, 0: single power-law
                             #                1: DRW
                             #                2: bending power-law
                             #                3: single power-law + periodic
@@ -18,12 +18,15 @@ FileDir         .                # file direcotry
 
 FileName        data/ngc5548.txt     # file name
 
+#===============================================
+# configurations
 V               2.0              # factor for extension of time interval in term of data
 W               2.0              # factor for time resolution in terms of data  
 
 FreqLimit       5.0e-5           # frequency limit below which PSD flattens off
 FlagEndMatch    0                # end matching to reduce leakage, 0, no; 1, yes.
 FlagWhiteNoise  0                # white noise in PSD, 0, exclued; 1, included
+
 #===============================================
 # only for simulation (-g option turned on)
 

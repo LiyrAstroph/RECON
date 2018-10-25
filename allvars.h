@@ -36,7 +36,7 @@ extern double *flux_sim_mean, *err_sim_mean;
 
 extern gsl_interp_accel *gsl_acc_sim;
 extern gsl_interp  *gsl_linear_sim;
-extern fftw_plan pfft, pfft_r2r;
+extern fftw_plan pfft;
 extern fftw_complex *fft_work;
 
 extern int num_params, num_params_psd, num_recon;

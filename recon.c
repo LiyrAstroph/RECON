@@ -30,7 +30,7 @@ double recon()
 {
   int i, argc=0, narg=9;
   char **argv;
-  double logz;
+  double logz = 0.0;
   
   strcpy(options_file, "OPTIONS");
 
@@ -230,6 +230,9 @@ int recon_init()
   int i;
   double Tall, Tmin, Tmax;
  
+  /* set the root task */
+  roottask = 0;
+
   fptrset = dnest_malloc_fptrset();
 
   /* setup functions used for dnest*/
@@ -251,8 +254,6 @@ int recon_init()
     fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_recon_exam;
   }
 
-  roottask = 0;
-
   if(parset.psdperiod_model == 1)
   {
     psdfunc_period = psd_period_lorentz;
@@ -270,473 +271,46 @@ int recon_init()
       psdfunc = psd_power_law;
       psdfunc_sqrt = psd_power_law_sqrt;
       parset.num_params_psd = 3;
-
-      if(recon_flag_sim == 1)
-      {
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
-        
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-        
-        if(parset.psd_arg[2] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 3rd PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[2] == 0.0)
-        {
-          parset.psd_arg[2] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[2] = log(parset.psd_arg[2]);
-        }
-      }
       break;
   
     case 1: // damped random walk
       psdfunc = psd_drw;
       psdfunc_sqrt = psd_drw_sqrt;
       parset.num_params_psd = 3;
-
-      if(recon_flag_sim == 1)
-      {
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
-
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-
-        if(parset.psd_arg[1] <=0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 2nd PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[1] = log(parset.psd_arg[1]);
-        }
-
-        if(parset.psd_arg[2] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 3rd PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[2] == 0.0)
-        {
-          parset.psd_arg[2] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[2] = log(parset.psd_arg[2]);
-        }
-      }
-
       break;
       
     case 2: // bending power-law
       psdfunc = psd_bending_power_law;
-      psdfunc_sqrt = psd_bending_power_law_sqrt;
-        
+      psdfunc_sqrt = psd_bending_power_law_sqrt;   
       parset.num_params_psd = 5;
-
-      if(recon_flag_sim == 1)
-      {
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
-                                                            &parset.psd_arg[3], &parset.psd_arg[4]);
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-
-        if(parset.psd_arg[3] <=0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 4th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[3] = log(parset.psd_arg[3]);
-        }
-
-        if(parset.psd_arg[4] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[4] == 0.0)
-        {
-          parset.psd_arg[4] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[4] = log(parset.psd_arg[4]);
-        }
-      }
       break;
 
     case 3: // single power-law and periodic
       psdfunc = psd_power_law;
       psdfunc_sqrt = psd_power_law_sqrt;
       parset.num_params_psd = 6;
-      if(recon_flag_sim == 1)
-      {
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
-                &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
-
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-
-        if(parset.psd_arg[2] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 3rd PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[2] == 0.0)
-        {
-          parset.psd_arg[2] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[2] = log(parset.psd_arg[2]);
-        }
-
-        if(parset.psd_arg[3] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 4th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[3] == 0.0)
-        {
-          parset.psd_arg[3] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[3] = log(parset.psd_arg[3]);
-        }
-        
-        if(parset.psd_arg[4] <= 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[4] = log(parset.psd_arg[4]);
-        }
-
-        if(parset.psd_arg[5] <= 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[5] = log(parset.psd_arg[5]);
-        }
-      }
       break;
     
     case 4:  // drw + periodic
       psdfunc = psd_drw;
       psdfunc_sqrt = psd_drw_sqrt;
       parset.num_params_psd = 6;
-
-      if(recon_flag_sim == 1)
-      {
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2], 
-                                                  &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5]);
-
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-
-        if(parset.psd_arg[1] <=0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 2nd PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[1] = log(parset.psd_arg[1]);
-        }
-
-        if(parset.psd_arg[2] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 3rd PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[2] == 0.0)
-        {
-          parset.psd_arg[2] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[2] = log(parset.psd_arg[2]);
-        }
-
-        if(parset.psd_arg[3] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 4th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[3] == 0.0)
-        {
-          parset.psd_arg[3] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[3] = log(parset.psd_arg[3]);
-        }
-        
-        if(parset.psd_arg[4] <= 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[4] = log(parset.psd_arg[4]);
-        }
-
-        if(parset.psd_arg[5] <= 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[5] = log(parset.psd_arg[5]);
-        }
-      }
-
       break;
 
     case 5:   // bending power-law + periodic 
       psdfunc = psd_bending_power_law;
       psdfunc_sqrt = psd_bending_power_law_sqrt;
-      
       parset.num_params_psd = 8;
-
-      if(recon_flag_sim == 1)
-      {
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
-                &parset.psd_arg[3], &parset.psd_arg[4], &parset.psd_arg[5], &parset.psd_arg[6], &parset.psd_arg[7]);
-
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-
-        if(parset.psd_arg[3] <=0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 4th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[3] = log(parset.psd_arg[3]);
-        }
-
-        if(parset.psd_arg[4] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 5th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[4] == 0.0)
-        {
-          parset.psd_arg[4] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[4] = log(parset.psd_arg[4]);
-        }
-
-        if(parset.psd_arg[5] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 6th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[5] == 0.0)
-        {
-          parset.psd_arg[5] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[5] = log(parset.psd_arg[5]);
-        }
-        
-        if(parset.psd_arg[6] <= 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 7th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[6] = log(parset.psd_arg[6]);
-        }
-
-        if(parset.psd_arg[7] <= 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 8th PSDArg.\n");
-            exit(0);
-          }
-        }
-        else
-        {
-          parset.psd_arg[7] = log(parset.psd_arg[7]);
-        }
-
-      }
       break;
 
     default:
       psdfunc = psd_power_law;
       psdfunc_sqrt = psd_power_law_sqrt;
       parset.num_params_psd = 3;
-      if(recon_flag_sim == 1)
-      {
-        parset.psd_arg[0] = log(1.0e0);
-        parset.psd_arg[1] = 1.5;
-        parset.psd_arg[2] = -DBL_MAX;
-      }
       break;
   }
 
+  /* open file for output recon configurations */
   if(thistask == roottask)
   {
     sprintf(fname, "%s/data/recon_info.txt", parset.file_dir);
@@ -759,13 +333,15 @@ int recon_init()
 
     freq_limit_data_lower = 1.0/(nd_sim * DT/W);
     freq_limit_data_upper = 1.0/(DT/W)/2.0;
+
+    read_sim_arg();
   }
   else
   {
-    sprintf(fname, "%s/%s", parset.file_dir, parset.file_name);
   
     if(thistask == roottask)
     {
+      sprintf(fname, "%s/%s", parset.file_dir, parset.file_name);
       ndata = get_line_number(fname);
     }
  
@@ -951,28 +527,7 @@ int recon_init()
 
   
   set_par_range();
-  //setup fixed parameters
-  for(i=0; i<num_params; i++)
-    par_fix[i] = 0;
-
-  if(parset.flag_whitenoise == 0)
-  {
-    if(parset.psd_type < 3) // no periodic component
-    {
-      par_fix[num_params_psd-1] = 1;
-      par_fix_val[num_params_psd-1] = -DBL_MAX;
-    }
-    else // periodic component included
-    {
-      par_fix[num_params_psd-3 - 1] = 1;
-      par_fix_val[num_params_psd-3 - 1] = -DBL_MAX;
-    }
-    
-    if(thistask == roottask)
-    {
-      printf("# Exclude white noise.\n");
-    }
-  }
+  set_par_fix();
 
   time_sim = malloc(nd_sim * sizeof(double));
   flux_sim = malloc(nd_sim * sizeof(double));
@@ -1020,6 +575,7 @@ int recon_end()
     free(var_range_model[i]);
   }
   free(var_range_model);
+
   for(i=0; i<num_params; i++)
   {
     free(par_range_model[i]);
@@ -1033,9 +589,14 @@ int recon_end()
   free(flux_sim);
   free(flux_sim_mean);
   free(err_sim_mean);
-  free(time_data);
-  free(flux_data);
-  free(flux_data_sim);
+
+  if(recon_flag_sim != 1)
+  {
+    free(time_data);
+    free(flux_data);
+    free(err_data);
+    free(flux_data_sim);
+  }
 
   return 0;
 }
@@ -1234,11 +795,6 @@ double perturb_recon(void *model)
   
 }
 
-int get_num_params_recon()
-{
-  return num_params;
-}
-
 void restart_action_recon(int iflag)
 {
   return;
@@ -1332,6 +888,35 @@ void get_posterior_sample_file(char *fname, char *samplefile)
   fclose(fp);
 }
 
+
+void set_par_fix()
+{
+  int i;
+  //setup fixed parameters
+  for(i=0; i<num_params; i++)
+    par_fix[i] = 0;
+
+  if(parset.flag_whitenoise == 0)
+  {
+    if(parset.psd_type < 3) // no periodic component
+    {
+      par_fix[num_params_psd-1] = 1;
+      par_fix_val[num_params_psd-1] = -DBL_MAX;
+    }
+    else // periodic component included
+    {
+      par_fix[num_params_psd-3 - 1] = 1;
+      par_fix_val[num_params_psd-3 - 1] = -DBL_MAX;
+    }
+    
+    if(thistask == roottask)
+    {
+      printf("# Exclude white noise.\n");
+    }
+  }
+
+  return;
+}
 
 /*!
  * this function set the parameter range.

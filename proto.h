@@ -18,7 +18,8 @@ int get_line_number(char *fname);
 void get_posterior_sample_file(char *fname, char *samplefile);
 int read_data(char *fname, int n, double *t, double *f, double *e);
 void set_par_range();
-double prob_con(const void *model);
+void set_par_fix();
+double prob_recon(const void *model);
 double psd_drw(double fk, double *arg);
 double psd_drw_sqrt(double fk, double *arg);
 double psd_power_law(double fk, double *arg);
@@ -33,6 +34,7 @@ int recon_postproc();
 void sim();
 void print_help();
 void read_parset();
+void read_sim_arg();
 void time_cad_cal();
 int recon_cmp(const void *a, const void *b);
 
