@@ -26,7 +26,7 @@ W               2.0              # factor for time resolution in terms of data
 FreqLimit       5.0e-5           # frequency limit below which PSD flattens off
 FlagEndMatch    0                # end matching to reduce leakage, 0, no; 1, yes.
 FlagWhiteNoise  0                # white noise in PSD, 0, exclued; 1, included
-
+FlagSaveOutput  1                # if 1, only output PSD parameters, not frequency series parameters
 #===============================================
 # only for simulation (-g option turned on)
 

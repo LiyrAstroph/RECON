@@ -83,7 +83,10 @@ double recon()
     if(recon_flag_psd != 1)
     {
       logz = dnest(argc, argv, fptrset, num_params, options_file);
-      recon_postproc();
+      if(parset.flag_saveoutput == 0)
+      {
+        recon_postproc();
+      }
     }
   }
   
@@ -238,8 +241,18 @@ int recon_init()
   /* setup functions used for dnest*/
   fptrset->from_prior = from_prior_recon;
   fptrset->perturb = perturb_recon;
-  fptrset->print_particle = print_particle_recon;
   fptrset->restart_action = restart_action_recon;
+  if(parset.flag_saveoutput == 0)
+  {
+    fptrset->print_particle = print_particle_recon;
+    fptrset->read_particle = read_particle_recon;
+  }
+  else
+  {
+    fptrset->print_particle = print_particle_recon_saveoutput;
+    fptrset->read_particle = read_particle_recon_saveoutput;
+  }
+
 
   if(recon_flag_prior_exam == 0)
   {
@@ -718,6 +731,56 @@ void print_particle_recon(FILE *fp, const void *model)
     fprintf(fp, "%e ", pm[i] );
   }
   fprintf(fp, "\n");
+  return;
+}
+
+void print_particle_recon_saveoutput(FILE *fp, const void *model)
+{
+  int i;
+  double *pm = (double *)model;
+
+  for(i=0; i<num_params_psd; i++)
+  {
+    fprintf(fp, "%e ", pm[i] );
+  }
+  fprintf(fp, "\n");
+  return;
+}
+
+void read_particle_recon(FILE *fp, void *model)
+{
+  int j;
+  double *psample = (double *)model;
+
+  for(j=0; j < num_params; j++)
+  {
+    if(fscanf(fp, "%lf", psample+j) < 1)
+    {
+      printf("%f\n", *psample);
+      fprintf(stderr, "Error: Cannot read sample file.\n");
+      exit(0);
+    }
+  }
+
+  return;
+}
+
+void read_particle_recon_saveoutput(FILE *fp, void *model)
+{
+  int j;
+  double *psample = (double *)model;
+
+  for(j=0; j < num_params_psd; j++)
+  {
+    if(fscanf(fp, "%lf", psample+j) < 1)
+    {
+      printf("%f\n", *psample);
+      fprintf(stderr, "Error: Cannot read sample file.\n");
+      exit(0);
+    }
+  }
+
+  return;
 }
 
 double log_likelihoods_cal_recon(const void *model)

@@ -75,6 +75,10 @@ void read_parset()
     addr[nt] = &parset.flag_whitenoise;
     id[nt++] = INT;
 
+    strcpy(tag[nt], "FlagSaveOutput");
+    addr[nt] = &parset.flag_saveoutput;
+    id[nt++] = INT;
+
     strcpy(tag[nt], "PSDPeriodModel");
     addr[nt] = &parset.psdperiod_model;
     id[nt++] = INT;

@@ -54,6 +54,9 @@ int remove_restart_file();
 /* functions */
 void from_prior_recon(void *model);
 void print_particle_recon(FILE *fp, const void *model);
+void read_particle_recon(FILE *fp, void *model);
+void print_particle_recon_saveoutput(FILE *fp, const void *model);
+void read_particle_recon_saveoutput(FILE *fp, void *model);
 double log_likelihoods_cal_recon(const void *model);
 double log_likelihoods_cal_recon_exam(const void *model);
 double perturb_recon(void *model);

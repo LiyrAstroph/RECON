@@ -81,6 +81,7 @@ typedef struct
   int flag_domain;
   int flag_endmatch;
   int flag_whitenoise;
+  int flag_saveoutput;
   int psdperiod_model;
 }PARSET;
 extern PARSET parset;
