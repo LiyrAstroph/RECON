@@ -253,7 +253,6 @@ int recon_init()
     fptrset->read_particle = read_particle_recon_saveoutput;
   }
 
-
   if(recon_flag_prior_exam == 0)
   {
     fptrset->log_likelihoods_cal = log_likelihoods_cal_recon;
@@ -267,6 +266,7 @@ int recon_init()
     fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_recon_exam;
   }
 
+  //initialize periodic PSD
   if(parset.psdperiod_model == 1)
   {
     psdfunc_period = psd_period_lorentz;
@@ -278,6 +278,7 @@ int recon_init()
     psdfunc_period_sqrt = psd_period_sqrt_gaussian;
   }
 
+  //initalize PSD functions and number of PSD parameters
   switch(parset.psd_type)
   {
     case 0: // single power-law
@@ -439,6 +440,15 @@ int recon_init()
 
     freq_limit_data_lower = 1.0/(time_data[ndata-1] - time_data[0]);
     freq_limit_data_upper = ndata/(time_data[ndata-1] - time_data[0])/2.0;
+
+    if(parset.freq_limit >= freq_limit_data_lower)
+    {
+      if(thistask == roottask)
+      {
+        printf("freq_limit is not good, larger than the minimal frequency limit of data.\n");
+      }
+      exit(0);
+    }
   }
 
   num_recon = nd_sim;
@@ -666,7 +676,6 @@ int genlc(const void *model)
   norm = 1.0/sqrt(nd_sim) * sqrt(nd_sim/(2.0 *nd_sim * DT));
   for(i=0; i<nd_sim; i++)
   {
-    //printf("%f\n", flux_workspace[i]);
     time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
     flux_sim[i] = flux_sim[i] * norm;
   }
@@ -692,9 +701,10 @@ double prob_recon(const void *model)
   prob = 0.0;
   for(i=0; i<ndata; i++)
   {
-    prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/err_data[i]/err_data[i] 
-            -0.5*log(2.0*PI) - log(err_data[i]);
+    prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]) 
+            -log(err_data[i]);
   }
+  prob += -0.5*ndata*log(2.0*PI);
   return prob;
 }
 

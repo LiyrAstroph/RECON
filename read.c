@@ -116,6 +116,7 @@ void read_parset()
     //default values
     parset.flag_endmatch = 0;
     parset.flag_whitenoise = 0;
+    parset.flag_saveoutput = 0;
 
     while(!feof(fparam))
     {
@@ -191,7 +192,9 @@ void read_parset()
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
   return;
 }
-
+/*!
+ * read data 
+ */
 int read_data(char *fname, int n, double *t, double *f, double *e)
 {
   FILE *fp;
@@ -226,7 +229,9 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
   return 0;
 }
 
-
+/*
+ * deal with input PSD argument.
+ */
 void read_sim_arg()
 {
   switch(parset.psd_type)

@@ -56,7 +56,6 @@ int psddata_cal()
   }
   fclose(fp);
 
-
   psd_fit_check(freq, psd, nf);
 
   free(freq);
@@ -290,20 +289,22 @@ double psd_power_law(double fk, double *arg)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
 
-  if(fk < parset.freq_limit)
-    return A*pow(parset.freq_limit, -alpha) + cnoise;
-  else
+  if(fk > parset.freq_limit)
     return A * pow(fk, -alpha) + cnoise;
+  else
+    return A*pow(parset.freq_limit, -alpha) + cnoise;
+    
 }
 
 double psd_power_law_sqrt(double fk, double *arg)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
 
-  if(fk < parset.freq_limit)
-    return sqrt(A*pow(parset.freq_limit, -alpha) + cnoise);
-  else
+  if(fk > parset.freq_limit)
     return sqrt(A * pow(fk, -alpha) + cnoise);
+  else
+    return sqrt(A*pow(parset.freq_limit, -alpha) + cnoise);
+    
 }
 
 double psd_bending_power_law(double fk, double *arg)
@@ -311,13 +312,12 @@ double psd_bending_power_law(double fk, double *arg)
   double A=exp(arg[0]), alpha_hi=arg[1], alpha_lo=(arg[1] - arg[2]);
   double fc=exp(arg[3]), cnoise=exp(arg[4]);
 
-  if(fk < parset.freq_limit)
-    return A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise;
-
   if(fk > fc)
     return A * pow(fk/fc, -alpha_hi) + cnoise;
-  else
+  else if(fk > parset.freq_limit)
     return A * pow(fk/fc, -alpha_lo) + cnoise;
+  else
+    return A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise;
 }
 
 double psd_bending_power_law_sqrt(double fk, double *arg)
@@ -325,13 +325,12 @@ double psd_bending_power_law_sqrt(double fk, double *arg)
   double A=exp(arg[0]), alpha_hi=arg[1], alpha_lo=(arg[1] - arg[2]);
   double fc=exp(arg[3]), cnoise=exp(arg[4]);
 
-  if(fk < parset.freq_limit)
-    return sqrt(A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise);
-
   if(fk > fc)
     return sqrt(A * pow(fk/fc, -alpha_hi) + cnoise);
-  else
+  else if(fk > parset.freq_limit)
     return sqrt(A * pow(fk/fc, -alpha_lo) + cnoise);
+  else
+    return sqrt(A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise);
 }
 
 double psd_period_gaussian(double fk, double *arg)

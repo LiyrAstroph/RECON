@@ -18,8 +18,7 @@
 
 #define PI  (M_PI)
 
-extern int thistask, totaltask;
-extern int roottask;
+extern int roottask, thistask, totaltask;
 extern int namelen;
 extern char proc_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -44,8 +43,6 @@ extern double **par_range_model, **var_range_model, *par_fix_val;
 extern int *par_fix;
 
 extern int which_level_update, num_particles;
-extern unsigned long long int which_mcmc_steps;
-extern double *limits;
 
 extern int recon_flag_postprc; 
 extern double recon_temperature;

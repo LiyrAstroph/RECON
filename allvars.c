@@ -14,8 +14,7 @@
 
 #include "allvars.h"
 
-int thistask, totaltask;
-int roottask;
+int roottask, thistask, totaltask;
 int namelen;
 char proc_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -41,7 +40,6 @@ double **par_range_model, **var_range_model, *par_fix_val;
 int *par_fix;
 
 int which_level_update, num_particles;
-unsigned long long int which_mcmc_steps;
 
 int recon_flag_postprc; 
 double recon_temperature;
