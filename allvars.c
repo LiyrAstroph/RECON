@@ -52,8 +52,8 @@ int recon_flag_end;
 int recon_flag_limits;
 int recon_flag_prior_exam;
 int recon_flag_seed;
+int recon_flag_cal_psd;
 int recon_seed;
-int recon_flag_psd;
 
 PARSET parset;
 

@@ -80,7 +80,7 @@ double recon()
   }
   else
   {
-    if(recon_flag_psd != 1)
+    if(recon_flag_cal_psd != 1)
     {
       logz = dnest(argc, argv, fptrset, num_params, options_file);
       if(parset.flag_saveoutput == 0)
@@ -267,19 +267,31 @@ int recon_init()
   }
 
   //initialize periodic PSD
-  if(parset.psdperiod_model == 1)
+  switch(parset.psdperiod_model)
   {
-    psdfunc_period = psd_period_lorentz;
-    psdfunc_period_sqrt = psd_period_sqrt_lorentz;
-  }
-  else
-  {
-    psdfunc_period = psd_period_gaussian;
-    psdfunc_period_sqrt = psd_period_sqrt_gaussian;
+    case -1:
+      parset.num_params_psdperiod = 0;
+      break;
+
+    case 0:
+      psdfunc_period = psd_period_gaussian;
+      psdfunc_period_sqrt = psd_period_sqrt_gaussian;
+      parset.num_params_psdperiod = 3;
+      break;
+
+    case 1:
+      psdfunc_period = psd_period_lorentz;
+      psdfunc_period_sqrt = psd_period_sqrt_lorentz;
+      parset.num_params_psdperiod = 3; 
+      break;
+
+    default:
+      parset.num_params_psdperiod = 0;
+      break;
   }
 
   //initalize PSD functions and number of PSD parameters
-  switch(parset.psd_type)
+  switch(parset.psd_model)
   {
     case 0: // single power-law
       psdfunc = psd_power_law;
@@ -297,24 +309,6 @@ int recon_init()
       psdfunc = psd_bending_power_law;
       psdfunc_sqrt = psd_bending_power_law_sqrt;   
       parset.num_params_psd = 5;
-      break;
-
-    case 3: // single power-law and periodic
-      psdfunc = psd_power_law;
-      psdfunc_sqrt = psd_power_law_sqrt;
-      parset.num_params_psd = 6;
-      break;
-    
-    case 4:  // drw + periodic
-      psdfunc = psd_drw;
-      psdfunc_sqrt = psd_drw_sqrt;
-      parset.num_params_psd = 6;
-      break;
-
-    case 5:   // bending power-law + periodic 
-      psdfunc = psd_bending_power_law;
-      psdfunc_sqrt = psd_bending_power_law_sqrt;
-      parset.num_params_psd = 8;
       break;
 
     default:
@@ -452,10 +446,10 @@ int recon_init()
   }
 
   num_recon = nd_sim;
-  if(parset.psd_type >= 3)
+  if(parset.psdperiod_model >= 0)
     num_recon += nd_sim/2;
 
-  num_params_psd = parset.num_params_psd;
+  num_params_psd = parset.num_params_psd + parset.num_params_psdperiod;
 
   num_params = num_recon + num_params_psd;
 
@@ -469,7 +463,7 @@ int recon_init()
   var_range_model[i][0] = log(1.0e-10); // A
   var_range_model[i++][1] = log(1.0e6);
   
-  switch(parset.psd_type)
+  switch(parset.psd_model)
   {
     case 0:   // single power-law
       var_range_model[i][0] = 0.0;  //slope
@@ -490,40 +484,17 @@ int recon_init()
 
       var_range_model[i][0] = log(freq_limit_data_lower); //the smallest freq as bending frequency
       var_range_model[i++][1] = log(freq_limit_data_upper); // the largest freq
-
-      break;
-
-    case 3:  // single power-law + periodic
-      var_range_model[i][0] = 0.0;      //slope
-      var_range_model[i++][1] = 5.0;
-      break;
-
-    case 4:   // damped random walk + periodic
-      var_range_model[i][0] = log(freq_limit_data_lower/(2.0*PI)); //characteristic frequency
-      var_range_model[i++][1] = log(freq_limit_data_upper/(2.0*PI));
-      break;
-
-    case 5:  // bending power law + periodic
-      var_range_model[i][0] = 1.0; //alpha_hi
-      var_range_model[i++][1] = 5.0;
-
-      var_range_model[i][0] = 0.0; //alpha_hi-alpha_lo
-      var_range_model[i++][1] = 4.0;
-
-      var_range_model[i][0] = log(freq_limit_data_lower); //the smallest freq as bending frequency
-      var_range_model[i++][1] = log(freq_limit_data_upper); // the largest freq
-
       break;
 
     default:
       var_range_model[i][0] = 0.0;
       var_range_model[i++][1] = 5.0;
   }
-  
+
   var_range_model[i][0] = log(1.0e-10); //noise
   var_range_model[i++][1] = log(1.0e3);
 
-  if(parset.psd_type >=3)
+  if(parset.psdperiod_model >=0)
   {
     var_range_model[i][0] = log(1.0e-10);  //Ap
     var_range_model[i++][1] = log(1.0e6);
@@ -659,7 +630,7 @@ int genlc(const void *model)
   fft_work[nd_sim/2][0] *= psd_sqrt;
   
   // add periodic component
-  if(parset.psd_type >=3)
+  if(parset.psdperiod_model >=0)
   {
     for(i=1; i<nd_sim/2+1; i++)
     {
@@ -971,7 +942,7 @@ void set_par_fix()
 
   if(parset.flag_whitenoise == 0)
   {
-    if(parset.psd_type < 3) // no periodic component
+    if(parset.psdperiod_model < 0) // no periodic component
     {
       par_fix[num_params_psd-1] = 1;
       par_fix_val[num_params_psd-1] = -DBL_MAX;
@@ -1078,7 +1049,7 @@ void sim()
 
   memcpy(pm, parset.psd_arg, num_params_psd * sizeof(double));
 
-  pm[parset.num_params_psd] = 0.0;
+  pm[num_params_psd] = 0.0;
   
   for(i=1; i<nd_sim; i++)
   {

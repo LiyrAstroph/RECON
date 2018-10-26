@@ -50,7 +50,7 @@ double recon_run(int argc, char **argv)
     recon_flag_limits=0;
     recon_flag_prior_exam=0;
     recon_flag_seed = 0;
-    recon_flag_psd = 0;
+    recon_flag_cal_psd = 0;
 
     while( (opt = getopt(argc, argv, "pgt:rchles:d")) != -1)
     {
@@ -107,7 +107,7 @@ double recon_run(int argc, char **argv)
           break;
 
         case 'd':
-          recon_flag_psd = 1;
+          recon_flag_cal_psd = 1;
           printf("# Only calculate PSD.\n");
           break;
 
@@ -151,7 +151,7 @@ double recon_run(int argc, char **argv)
   MPI_Bcast(&recon_flag_prior_exam, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&recon_flag_seed, 1, MPI_INT, roottask, MPI_COMM_WORLD);
   MPI_Bcast(&recon_seed, 1, MPI_INT, roottask, MPI_COMM_WORLD);
-  MPI_Bcast(&recon_flag_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&recon_flag_cal_psd, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
   if(recon_flag_end == 1 && recon_flag_help == 0 )
   {

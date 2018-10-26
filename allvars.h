@@ -55,8 +55,8 @@ extern int recon_flag_end;
 extern int recon_flag_limits;
 extern int recon_flag_prior_exam;
 extern int recon_flag_seed;
+extern int recon_flag_cal_psd;
 extern int recon_seed;
-extern int recon_flag_psd;
 
 typedef struct
 {
@@ -67,7 +67,7 @@ typedef struct
   double V, W;
   double freq_limit;
 
-  int psd_type, num_params_psd;
+  int psd_model, psdperiod_model, num_params_psd, num_params_psdperiod;
   double fbad, ferr;
   char str_psd_arg[200];
   double psd_arg[20];  // maximal number of arguments is 20.
@@ -79,7 +79,6 @@ typedef struct
   int flag_endmatch;
   int flag_whitenoise;
   int flag_saveoutput;
-  int psdperiod_model;
 }PARSET;
 extern PARSET parset;
 

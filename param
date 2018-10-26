@@ -2,14 +2,11 @@
 # lines beginning with '#' are regarded as comments and are neglected
 # 
 
-PSDType         0           # 0-5; psd type, 0: single power-law
-                            #                1: DRW
-                            #                2: bending power-law
-                            #                3: single power-law + periodic
-                            #                4: DRW + periodic
-                            #                5: bending power-law + periodic
+PSDModel         0               # 0-2; psd model,0: single power-law
+                                 #                1: DRW
+                                 #                2: bending power-law
 
-PSDPeriodModel  1           # profile for periodic PSD, 0, Gaussian; 1, Lorentz
+PSDPeriodModel   -1              # -1, none; 0, Gaussian; 1, Lorentz
 
 #===============================================
 # data 
@@ -30,11 +27,11 @@ FlagSaveOutput  1                # if 1, only output PSD parameters, not frequen
 #===============================================
 # only for simulation (-g option turned on)
 
-FileSim         data/sim.txt       # output file name of simulated time series
-ND_Sim          2000                # number of points
-DT              2.0                # time resolution
-FBad            0.0               # fraction of bad points
-FErr            1.0                # measurement noise
+FileSim         data/sim.txt     # output file name of simulated time series
+ND_Sim          2000             # number of points
+DT              2.0              # time resolution
+FBad            0.0              # fraction of bad points
+FErr            1.0              # measurement noise
 
 # PSD argument
 #PSDArg         1.0e-3:2.5:0.0                     # type 0, single power-law:  A:alpha:noise

@@ -55,8 +55,8 @@ void read_parset()
     addr[nt] = &parset.freq_limit;
     id[nt++] = DOUBLE;
 
-    strcpy(tag[nt], "PSDType");
-    addr[nt] = &parset.psd_type;
+    strcpy(tag[nt], "PSDModel");
+    addr[nt] = &parset.psd_model;
     id[nt++] = INT;
 
     strcpy(tag[nt], "PSDArg");
@@ -117,6 +117,7 @@ void read_parset()
     parset.flag_endmatch = 0;
     parset.flag_whitenoise = 0;
     parset.flag_saveoutput = 0;
+    parset.psdperiod_model = -1;
 
     while(!feof(fparam))
     {
@@ -159,6 +160,18 @@ void read_parset()
     }
     fclose(fparam);
 
+    if(parset.psd_model > 2 || parset.psd_model <0)
+    {
+      printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [0-2].\n", parset.psd_model);
+      exit(0);
+    }
+
+    if(parset.psdperiod_model > 1 || parset.psdperiod_model <-1)
+    {
+      printf("Incorrect PSDPeriodModel=%d.\nPSDPeriodModel should lie in the range [-1-1].\n", parset.psdperiod_model);
+      exit(0);
+    }
+
     if(parset.V < 1.0)
     {
       printf("Incorrect V=%f.\n V should be larger than 1.\n", parset.V);
@@ -183,13 +196,15 @@ void read_parset()
       exit(0);
     }
 
-    if(recon_flag_psd == 1)
+    if(recon_flag_cal_psd == 1)
     {
       parset.flag_endmatch = 0;
     }
+
   }
   
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
+
   return;
 }
 /*!
@@ -234,7 +249,7 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
  */
 void read_sim_arg()
 {
-  switch(parset.psd_type)
+  switch(parset.psd_model)
   {
     case 0: // single power-law
       sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
