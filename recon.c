@@ -330,6 +330,8 @@ int recon_init()
     }
   }
 
+  num_params_psd = parset.num_params_psd + parset.num_params_psdperiod;
+
   /* fft */
   if(recon_flag_sim==1)
   {
@@ -448,8 +450,6 @@ int recon_init()
   num_recon = nd_sim;
   if(parset.psdperiod_model >= 0)
     num_recon += nd_sim/2;
-
-  num_params_psd = parset.num_params_psd + parset.num_params_psdperiod;
 
   num_params = num_recon + num_params_psd;
 
