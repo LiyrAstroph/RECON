@@ -55,9 +55,21 @@ void read_parset()
     addr[nt] = &parset.freq_limit;
     id[nt++] = DOUBLE;
 
+    strcpy(tag[nt], "FlagDomain");
+    addr[nt] = &parset.flag_domain;
+    id[nt++] = INT;
+
     strcpy(tag[nt], "PSDModel");
     addr[nt] = &parset.psd_model;
+    id[nt++] = STRING;
+
+    strcpy(tag[nt], "PSDType");
+    addr[nt] = &parset.psd_type;
     id[nt++] = INT;
+    
+    strcpy(tag[nt], "PSDPeriodModel");
+    addr[nt] = &parset.psdperiod_model;
+    id[nt++] = STRING;
 
     strcpy(tag[nt], "PSDArg");
     addr[nt] = &parset.str_psd_arg;
@@ -77,10 +89,6 @@ void read_parset()
 
     strcpy(tag[nt], "FlagSaveOutput");
     addr[nt] = &parset.flag_saveoutput;
-    id[nt++] = INT;
-
-    strcpy(tag[nt], "PSDPeriodModel");
-    addr[nt] = &parset.psdperiod_model;
     id[nt++] = INT;
 
     strcpy(tag[nt], "FileSim");
@@ -117,7 +125,10 @@ void read_parset()
     parset.flag_endmatch = 0;
     parset.flag_whitenoise = 0;
     parset.flag_saveoutput = 0;
-    parset.psdperiod_model = -1;
+    parset.psd_type = -1;
+    parset.psd_model_enum = simple;
+    parset.psdperiod_enum = harmonic;
+    parset.flag_domain = 0;
 
     while(!feof(fparam))
     {
@@ -160,17 +171,73 @@ void read_parset()
     }
     fclose(fparam);
 
-    if(parset.psd_model > 2 || parset.psd_model <0)
+    // check domain
+    if(parset.flag_domain != 0)
     {
-      printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [0-2].\n", parset.psd_model);
+      printf("Currently only support fequency domain.\n Set FlagDomain to be 0.\n");
       exit(0);
     }
 
-    if(parset.psdperiod_model > 1 || parset.psdperiod_model <-1)
+    // check psd model
+    if(strcmp(parset.psd_model, "simple") ==0 )
     {
-      printf("Incorrect PSDPeriodModel=%d.\nPSDPeriodModel should lie in the range [-1-1].\n", parset.psdperiod_model);
+      parset.psd_model_enum = simple;
+    }
+    else if(strcmp(parset.psd_model, "harmonic") ==0 )
+    {
+      parset.psd_model_enum = harmonic;
+    }
+    else if(strcmp(parset.psd_model, "celerite") ==0 )
+    {
+      parset.psd_model_enum = celerite;
+    }
+    else
+    {
+      printf("Incorrect PSDModel=%s.\nPSDModel should [simple, harmonic, celerite].\n", parset.psd_model);
       exit(0);
     }
+
+    // check psd type
+    if(parset.psd_model_enum == simple)
+    {
+      if(parset.psd_type > 2 || parset.psd_type <0)
+      {
+        printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [0-2].\n", parset.psd_type);
+        exit(0);
+      }
+    }
+    else if(parset.psd_model_enum == harmonic)
+    {
+      if(parset.psd_type > 5 || parset.psd_type < 1)
+      {
+        printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [1-5].\n", parset.psd_type);
+        exit(0);
+      }
+    }
+    else
+    {
+
+    }
+
+    // check periodic PSD model
+    if(strcmp(parset.psdperiod_model, "none") ==0 )
+    {
+      parset.psdperiod_enum = none;
+    }
+    else if(strcmp(parset.psdperiod_model, "gaussian") == 0)
+    {
+      parset.psdperiod_enum = gaussian;
+    }
+    else if(strcmp(parset.psdperiod_model, "lorentz") == 0)
+    {
+      parset.psdperiod_enum = lorentz;
+    }
+    else
+    {
+      printf("Incorrect PSDPeriodModel=%s.\nPSDPeriodModel should [none, gaussian, lorentz].\n", parset.psdperiod_model);
+      exit(0);
+    }
+
 
     if(parset.V < 1.0)
     {
@@ -198,11 +265,11 @@ void read_parset()
 
     if(recon_flag_cal_psd == 1)
     {
+      slope_endmatch = 0.0;
       parset.flag_endmatch = 0;
     }
 
   }
-  
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
 
   return;
@@ -215,7 +282,6 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
   FILE *fp;
   int i;
   char buf[200];
-  double slope;
 
   fp = fopen(fname, "r");
   if(fp==NULL)
@@ -231,13 +297,14 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
   }
   fclose(fp);
 
-  // end matching 
+  // end matching
+  slope_endmatch = 0.0; 
   if(parset.flag_endmatch == 1)
   {
-    slope = (f[n-1] - f[0])/(t[n-1] - t[0]);
+    slope_endmatch = (f[n-1] - f[0])/(t[n-1] - t[0]);
     for(i=0; i<n; i++)
     {
-      f[i] -= (slope*(t[i] - t[0]));
+      f[i] -= (slope_endmatch*(t[i] - t[0]));
     }
   }
   
@@ -251,120 +318,177 @@ void read_sim_arg()
 {
   int i;
 
-  switch(parset.psd_model)
+  if(parset.psd_model_enum == simple)
   {
-    case 0: // single power-law
-      sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
-        
-      if(parset.psd_arg[0] < 0.0)
-      {
-        if(thistask == roottask)
+    switch(parset.psd_type)
+    {
+      case 0: // single power-law
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+          
+        if(parset.psd_arg[0] < 0.0)
         {
-          printf("# Incorrect 1st PSDArg.\n");
-          exit(0);
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
         }
-      }
-      else if(parset.psd_arg[0] == 0.0)
-      {
-        parset.psd_arg[0] = -DBL_MAX;
-      }
-      else
-      {
-        parset.psd_arg[0] = log(parset.psd_arg[0]);
-      }
-        
-      if(parset.psd_arg[2] < 0.0)
-      {
-        if(thistask == roottask)
+        else if(parset.psd_arg[0] == 0.0)
         {
-          printf("# Incorrect 3rd PSDArg.\n");
-          exit(0);
+          parset.psd_arg[0] = -DBL_MAX;
         }
-      }
-      else if(parset.psd_arg[2] == 0.0)
-      {
-        parset.psd_arg[2] = -DBL_MAX;
-      }
-      else
-      {
-        parset.psd_arg[2] = log(parset.psd_arg[2]);
-      }
-    
-    break;
-  
-    case 1: // damped random walk
-      sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
- 
-      if(parset.psd_arg[0] < 0.0)
-      {
-        if(thistask == roottask)
+        else
         {
-          printf("# Incorrect 1st PSDArg.\n");
-          exit(0);
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
         }
-      }
-      else if(parset.psd_arg[0] == 0.0)
-      {
-        parset.psd_arg[0] = -DBL_MAX;
-      }
-      else
-      {
-        parset.psd_arg[0] = log(parset.psd_arg[0]);
-      }
-
-      if(parset.psd_arg[1] <=0.0)
-      {
-        if(thistask == roottask)
+          
+        if(parset.psd_arg[2] < 0.0)
         {
-          printf("# Incorrect 2nd PSDArg.\n");
-          exit(0);
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 3rd PSDArg.\n");
+            exit(0);
+          }
         }
-      }
-      else
-      {
-        parset.psd_arg[1] = log(parset.psd_arg[1]);
-      }
-
-      if(parset.psd_arg[2] < 0.0)
-      {
-        if(thistask == roottask)
+        else if(parset.psd_arg[2] == 0.0)
         {
-          printf("# Incorrect 3rd PSDArg.\n");
-          exit(0);
+          parset.psd_arg[2] = -DBL_MAX;
         }
-      }
-      else if(parset.psd_arg[2] == 0.0)
-      {
-        parset.psd_arg[2] = -DBL_MAX;
-      }
-      else
-      {
-        parset.psd_arg[2] = log(parset.psd_arg[2]);
-      }
-
-      break;
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
       
-    case 2: // bending power-law
-      sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
-                                                            &parset.psd_arg[3], &parset.psd_arg[4]);
-      if(parset.psd_arg[0] < 0.0)
-      {
-        if(thistask == roottask)
+      break;
+    
+      case 1: // damped random walk
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
+   
+        if(parset.psd_arg[0] < 0.0)
         {
-          printf("# Incorrect 1st PSDArg.\n");
-          exit(0);
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
         }
-      }
-      else if(parset.psd_arg[0] == 0.0)
-      {
-        parset.psd_arg[0] = -DBL_MAX;
-      }
-      else
-      {
-        parset.psd_arg[0] = log(parset.psd_arg[0]);
-      }
-
-      if(parset.psd_arg[3] <=0.0)
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
+   
+        if(parset.psd_arg[1] <=0.0)
+        {
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 2nd PSDArg.\n");
+            exit(0);
+          }
+        }
+        else
+        {
+          parset.psd_arg[1] = log(parset.psd_arg[1]);
+        }
+   
+        if(parset.psd_arg[2] < 0.0)
+        {
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 3rd PSDArg.\n");
+            exit(0);
+          }
+        }
+        else if(parset.psd_arg[2] == 0.0)
+        {
+          parset.psd_arg[2] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[2] = log(parset.psd_arg[2]);
+        }
+   
+        break;
+        
+      case 2: // bending power-law
+        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
+                                                              &parset.psd_arg[3], &parset.psd_arg[4]);
+        if(parset.psd_arg[0] < 0.0)
+        {
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 1st PSDArg.\n");
+            exit(0);
+          }
+        }
+        else if(parset.psd_arg[0] == 0.0)
+        {
+          parset.psd_arg[0] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[0] = log(parset.psd_arg[0]);
+        }
+   
+        if(parset.psd_arg[3] <=0.0)
+        {
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 4th PSDArg.\n");
+            exit(0);
+          }
+        }
+        else
+        {
+          parset.psd_arg[3] = log(parset.psd_arg[3]);
+        }
+   
+        if(parset.psd_arg[4] < 0.0)
+        {
+          if(thistask == roottask)
+          {
+            printf("# Incorrect 5th PSDArg.\n");
+            exit(0);
+          }
+        }
+        else if(parset.psd_arg[4] == 0.0)
+        {
+          parset.psd_arg[4] = -DBL_MAX;
+        }
+        else
+        {
+          parset.psd_arg[4] = log(parset.psd_arg[4]);
+        }
+   
+        break;
+   
+      default:
+        parset.psd_arg[0] = log(1.0e0);
+        parset.psd_arg[1] = 1.5;
+        parset.psd_arg[2] = -DBL_MAX;
+        break;
+    }
+    
+    char *str, *pstr;
+    str = parset.str_psd_arg;
+   
+    for(i=0; i<parset.num_params_psd; i++)
+    {
+      pstr = strchr(str, ':');
+      str = pstr+1;
+    }
+    
+    if(parset.psdperiod_enum > none)
+    {
+      sscanf(str, "%lf:%lf:%lf", &parset.psd_arg[parset.num_params_psd+0], 
+                                 &parset.psd_arg[parset.num_params_psd+1], 
+                                 &parset.psd_arg[parset.num_params_psd+2]);
+      
+      i = parset.num_params_psd+0;
+      if(parset.psd_arg[i] < 0.0)
       {
         if(thistask == roottask)
         {
@@ -372,12 +496,17 @@ void read_sim_arg()
           exit(0);
         }
       }
+      else if(parset.psd_arg[i] == 0.0)
+      {
+        parset.psd_arg[i] = -DBL_MAX;
+      }
       else
       {
-        parset.psd_arg[3] = log(parset.psd_arg[3]);
+        parset.psd_arg[i] = log(parset.psd_arg[i]);
       }
-
-      if(parset.psd_arg[4] < 0.0)
+       
+      i = parset.num_params_psd+1;   
+      if(parset.psd_arg[i] <= 0.0)
       {
         if(thistask == roottask)
         {
@@ -385,83 +514,24 @@ void read_sim_arg()
           exit(0);
         }
       }
-      else if(parset.psd_arg[4] == 0.0)
+      else
       {
-        parset.psd_arg[4] = -DBL_MAX;
+        parset.psd_arg[i] = log(parset.psd_arg[i]);
+      }
+   
+      i = parset.num_params_psd+2;
+      if(parset.psd_arg[i] <= 0.0)
+      {
+        if(thistask == roottask)
+        {
+          printf("# Incorrect 5th PSDArg.\n");
+          exit(0);
+        }
       }
       else
       {
-        parset.psd_arg[4] = log(parset.psd_arg[4]);
+        parset.psd_arg[i] = log(parset.psd_arg[i]);
       }
-
-      break;
-
-    default:
-      parset.psd_arg[0] = log(1.0e0);
-      parset.psd_arg[1] = 1.5;
-      parset.psd_arg[2] = -DBL_MAX;
-      break;
-  }
-  
-  char *str, *pstr;
-  str = parset.str_psd_arg;
-
-  for(i=0; i<parset.num_params_psd; i++)
-  {
-    pstr = strchr(str, ':');
-    str = pstr+1;
-  }
-  
-  if(parset.psdperiod_model >=0)
-  {
-    sscanf(str, "%lf:%lf:%lf", &parset.psd_arg[parset.num_params_psd+0], 
-                               &parset.psd_arg[parset.num_params_psd+1], 
-                               &parset.psd_arg[parset.num_params_psd+2]);
-    
-    i = parset.num_params_psd+0;
-    if(parset.psd_arg[i] < 0.0)
-    {
-      if(thistask == roottask)
-      {
-        printf("# Incorrect 4th PSDArg.\n");
-        exit(0);
-      }
-    }
-    else if(parset.psd_arg[i] == 0.0)
-    {
-      parset.psd_arg[i] = -DBL_MAX;
-    }
-    else
-    {
-      parset.psd_arg[i] = log(parset.psd_arg[i]);
-    }
-     
-    i = parset.num_params_psd+1;   
-    if(parset.psd_arg[i] <= 0.0)
-    {
-      if(thistask == roottask)
-      {
-        printf("# Incorrect 5th PSDArg.\n");
-        exit(0);
-      }
-    }
-    else
-    {
-      parset.psd_arg[i] = log(parset.psd_arg[i]);
-    }
-
-    i = parset.num_params_psd+2;
-    if(parset.psd_arg[i] <= 0.0)
-    {
-      if(thistask == roottask)
-      {
-        printf("# Incorrect 5th PSDArg.\n");
-        exit(0);
-      }
-    }
-    else
-    {
-      parset.psd_arg[i] = log(parset.psd_arg[i]);
     }
   }
 

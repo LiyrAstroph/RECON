@@ -25,6 +25,7 @@ extern char proc_name[MPI_MAX_PROCESSOR_NAME];
 extern int ndata;
 extern double *flux_data, *time_data, *err_data;
 extern double time_media, time_cad_min, time_cad_media, flux_data_min, flux_data_max, flux_scale, flux_mean;
+extern double slope_endmatch;
 
 extern double freq_limit_data_lower, freq_limit_data_upper;
 
@@ -63,18 +64,22 @@ typedef struct
   char file_dir[200]; 
   char param_file[200]; 
   char file_name[200];
+  char psd_model[20];
+  char psdperiod_model[20];
+  char str_psd_arg[200];
+  char file_sim[200];
 
   double V, W;
   double freq_limit;
 
-  int psd_model, psdperiod_model, num_params_psd, num_params_psdperiod;
+  int psd_model_enum, psd_type, psdperiod_enum;
+  int num_params_psd, num_params_psdperiod;
   double fbad, ferr;
-  char str_psd_arg[200];
-  double psd_arg[20];  // maximal number of arguments is 20.
 
-  char file_sim[200];
   int nd_sim;
   double DT;
+  double psd_arg[20];  // maximal number of arguments is 20.
+
   int flag_domain;
   int flag_endmatch;
   int flag_whitenoise;
@@ -83,4 +88,10 @@ typedef struct
 extern PARSET parset;
 
 extern FILE *finfo;
+
+enum PSDMODEL {simple, harmonic, celerite};
+enum PSDPERIODMODEL {none, gaussian, lorentz};
+
+// for harmonic
+extern int harmonic_term_num;
 #endif

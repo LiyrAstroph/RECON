@@ -19,6 +19,7 @@ void get_posterior_sample_file(char *fname, char *samplefile);
 int read_data(char *fname, int n, double *t, double *f, double *e);
 void set_par_range();
 void set_par_fix();
+void set_psd_functions();
 double prob_recon(const void *model);
 int recon_postproc();
 void sim();
@@ -44,6 +45,9 @@ double psd_period_lorentz(double fk, double *arg);
 double psd_period_sqrt_lorentz(double fk, double *arg);
 double psd_bending_power_law(double fk, double *arg);
 double psd_bending_power_law_sqrt(double fk, double *arg);
+
+double psd_harmonic(double fk, double *arg);
+double psd_harmonic_sqrt(double fk, double *arg);
 
 /* system */
 double second();

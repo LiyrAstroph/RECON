@@ -70,7 +70,7 @@ double recon()
   }
 
   recon_init();
-  
+
   if(recon_flag_sim == 1)
   {
     if(thistask == roottask)
@@ -180,18 +180,24 @@ int recon_postproc()
       }
 
       i1 = ceil((time_data[0] - 0.2*(time_data[ndata-1] - time_data[0]) - time_sim[0])/DT);
+      if(i1 < 0)
+        i1 = 0;
       i2 = ceil((time_data[ndata-1]  + 0.2*(time_data[ndata-1] - time_data[0]) - time_sim[0])/DT);
+      if(i2 > nd_sim)
+        i2 = nd_sim;
       for(j=i1; j<i2; j++)
       {
         //flux_data_sim[j] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[j], gsl_acc_sim);
 
-        fprintf(fcon, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale+flux_mean);
+        fprintf(fcon, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale+flux_mean 
+          + slope_endmatch * (time_sim[j] - time_data[0]));
       }
       fprintf(fcon, "\n");
 
       for(j=0; j<nd_sim; j++)
       {
-        fprintf(fcon_all, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale + flux_mean);
+        fprintf(fcon_all, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale + flux_mean
+          + slope_endmatch * (time_sim[j] - time_data[0]) );
       }
       fprintf(fcon_all, "\n");
 
@@ -212,7 +218,8 @@ int recon_postproc()
     }
     for(j=0; j<nd_sim; j++)
     {
-      fprintf(fcon_mean, "%f %e %e\n", time_sim[j], flux_sim_mean[j]*flux_scale+flux_mean, err_sim_mean[j]*flux_scale);
+      fprintf(fcon_mean, "%f %e %e\n", time_sim[j], flux_sim_mean[j]*flux_scale+flux_mean
+        + slope_endmatch * (time_sim[j] - time_data[0]), err_sim_mean[j]*flux_scale);
     }
 
     fclose(fp);
@@ -266,57 +273,7 @@ int recon_init()
     fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_recon_exam;
   }
 
-  //initialize periodic PSD
-  switch(parset.psdperiod_model)
-  {
-    case -1:
-      parset.num_params_psdperiod = 0;
-      break;
-
-    case 0:
-      psdfunc_period = psd_period_gaussian;
-      psdfunc_period_sqrt = psd_period_sqrt_gaussian;
-      parset.num_params_psdperiod = 3;
-      break;
-
-    case 1:
-      psdfunc_period = psd_period_lorentz;
-      psdfunc_period_sqrt = psd_period_sqrt_lorentz;
-      parset.num_params_psdperiod = 3; 
-      break;
-
-    default:
-      parset.num_params_psdperiod = 0;
-      break;
-  }
-
-  //initalize PSD functions and number of PSD parameters
-  switch(parset.psd_model)
-  {
-    case 0: // single power-law
-      psdfunc = psd_power_law;
-      psdfunc_sqrt = psd_power_law_sqrt;
-      parset.num_params_psd = 3;
-      break;
-  
-    case 1: // damped random walk
-      psdfunc = psd_drw;
-      psdfunc_sqrt = psd_drw_sqrt;
-      parset.num_params_psd = 3;
-      break;
-      
-    case 2: // bending power-law
-      psdfunc = psd_bending_power_law;
-      psdfunc_sqrt = psd_bending_power_law_sqrt;   
-      parset.num_params_psd = 5;
-      break;
-
-    default:
-      psdfunc = psd_power_law;
-      psdfunc_sqrt = psd_power_law_sqrt;
-      parset.num_params_psd = 3;
-      break;
-  }
+  set_psd_functions();
 
   /* open file for output recon configurations */
   if(thistask == roottask)
@@ -329,7 +286,7 @@ int recon_init()
       exit(0);
     }
   }
-
+  
   num_params_psd = parset.num_params_psd + parset.num_params_psdperiod;
 
   /* fft */
@@ -377,7 +334,6 @@ int recon_init()
     
     MPI_Bcast(&time_cad_media, 1, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     
-
     time_media = (time_data[ndata-1] + time_data[0])/2.0;
     time_cad_min = (time_data[ndata-1] - time_data[0])/2.0;
     flux_data_min = flux_data_max = flux_data[0];
@@ -430,7 +386,8 @@ int recon_init()
       fprintf(finfo, "med. data cad.: %f\n", time_cad_media);
       fprintf(finfo, "mean data cad.: %f\n", (time_data[ndata-1] - time_data[0])/(ndata -1));
 
-      fprintf(finfo, "end mathcing flag: %d.\n", parset.flag_endmatch);
+      fprintf(finfo, "end mathcing flag: %d\n", parset.flag_endmatch);
+      fprintf(finfo, "end mathcing slope: %f\n", slope_endmatch);
       fprintf(finfo, "level-dependent sampling flag: %d\n", recon_flag_limits);
     }
 
@@ -448,7 +405,7 @@ int recon_init()
   }
 
   num_recon = nd_sim;
-  if(parset.psdperiod_model >= 0)
+  if(parset.psdperiod_enum > none)
     num_recon += nd_sim/2;
 
   num_params = num_recon + num_params_psd;
@@ -458,59 +415,6 @@ int recon_init()
   {
     var_range_model[i] = malloc(2*sizeof(double));
   }
-
-  i=0;
-  var_range_model[i][0] = log(1.0e-10); // A
-  var_range_model[i++][1] = log(1.0e6);
-  
-  switch(parset.psd_model)
-  {
-    case 0:   // single power-law
-      var_range_model[i][0] = 0.0;  //slope
-      var_range_model[i++][1] = 5.0;
-      break;
-
-    case 1:   // damped random walk
-      var_range_model[i][0] = log(freq_limit_data_lower/(2.0*PI)); //characteristic frequency
-      var_range_model[i++][1] = log(freq_limit_data_upper/(2.0*PI));
-      break;
-  
-    case 2:  // bending power-law
-      var_range_model[i][0] = 1.0; //alpha_hi
-      var_range_model[i++][1] = 5.0;
-
-      var_range_model[i][0] = 0.0; //alpha_hi-alpha_lo
-      var_range_model[i++][1] = 4.0;
-
-      var_range_model[i][0] = log(freq_limit_data_lower); //the smallest freq as bending frequency
-      var_range_model[i++][1] = log(freq_limit_data_upper); // the largest freq
-      break;
-
-    default:
-      var_range_model[i][0] = 0.0;
-      var_range_model[i++][1] = 5.0;
-  }
-
-  var_range_model[i][0] = log(1.0e-10); //noise
-  var_range_model[i++][1] = log(1.0e3);
-
-  if(parset.psdperiod_model >=0)
-  {
-    var_range_model[i][0] = log(1.0e-10);  //Ap
-    var_range_model[i++][1] = log(1.0e6);
-
-    var_range_model[i][0] = log(freq_limit_data_lower); //center
-    var_range_model[i++][1] = log(0.01);
-
-    var_range_model[i][0] = log(1.0e-6);   //sigma
-    var_range_model[i++][1] = log(freq_limit_data_upper);
-  }
-  
-  var_range_model[i][0] = -100.0;  //zero-frequency power
-  var_range_model[i++][1] = 100.0;
-
-  var_range_model[i][0] = -10.0;  //
-  var_range_model[i++][1] = 10.0;
 
   par_range_model = malloc( num_params * sizeof(double *));
   for(i=0; i<num_params; i++)
@@ -630,7 +534,7 @@ int genlc(const void *model)
   fft_work[nd_sim/2][0] *= psd_sqrt;
   
   // add periodic component
-  if(parset.psdperiod_model >=0)
+  if(parset.psdperiod_enum > none)
   {
     for(i=1; i<nd_sim/2+1; i++)
     {
@@ -640,7 +544,7 @@ int genlc(const void *model)
       fft_work[i][1] += psd_sqrt * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
   }
-
+  
   fftw_execute(pfft);
 
   // normalization factor in line with the continuous transform
@@ -814,7 +718,6 @@ double perturb_recon(void *model)
     }
   }
   
-
   //width = ( par_range_model[which][1] - par_range_model[which][0] );
   
   if(which < num_params_psd + 1)
@@ -942,7 +845,7 @@ void set_par_fix()
 
   if(parset.flag_whitenoise == 0)
   {
-    if(parset.psdperiod_model < 0) // no periodic component
+    if(parset.psdperiod_enum == none) // no periodic component
     {
       par_fix[num_params_psd-1] = 1;
       par_fix_val[num_params_psd-1] = -DBL_MAX;
@@ -967,10 +870,97 @@ void set_par_fix()
  */
 void set_par_range()
 {
-  int i;
+  int i=0, j;
+  
+  if(parset.psd_model_enum == simple )
+  {
+    i=0;
+    var_range_model[i][0] = log(1.0e-10); // A
+    var_range_model[i++][1] = log(1.0e6);
+  
+    switch(parset.psd_type)
+    {
+      case 0:   // single power-law
+        var_range_model[i][0] = 0.0;  //slope
+        var_range_model[i++][1] = 5.0;
+        break;
+
+      case 1:   // damped random walk
+        var_range_model[i][0] = log(freq_limit_data_lower/(2.0*PI)); //characteristic frequency
+        var_range_model[i++][1] = log(freq_limit_data_upper/(2.0*PI));
+        break;
+  
+      case 2:  // bending power-law
+        var_range_model[i][0] = 1.0; //alpha_hi
+        var_range_model[i++][1] = 5.0;
+ 
+        var_range_model[i][0] = 0.0; //alpha_hi-alpha_lo
+        var_range_model[i++][1] = 4.0;
+
+        var_range_model[i][0] = log(freq_limit_data_lower); //the smallest freq as bending frequency
+        var_range_model[i++][1] = log(freq_limit_data_upper); // the largest freq
+        break;
+
+      default:
+        var_range_model[i][0] = 0.0;
+        var_range_model[i++][1] = 5.0;
+    }
+  }
+  else if(parset.psd_model_enum == harmonic)
+  {
+    i=0;
+    var_range_model[i][0] = -10.0;
+    var_range_model[i++][1] =  10.0;
+
+    var_range_model[i][0] = fmin(-10.0, log(freq_limit_data_lower));
+    var_range_model[i++][1] = fmax(10.0, log(freq_limit_data_upper));
+
+    for(j=1; j<harmonic_term_num; j++)
+    {
+      var_range_model[i][0] = -10.0;
+      var_range_model[i++][1] =  10.0;
+
+      var_range_model[i][0] = log(freq_limit_data_lower) 
+           + (j-1) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/(harmonic_term_num-1);
+      var_range_model[i++][1] =  log(freq_limit_data_lower) 
+           + (j) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/(harmonic_term_num-1);
+
+      var_range_model[i][0] = log(1.0001);
+      var_range_model[i++][1] =  log(200.0);
+    }
+
+  }
+  else if(parset.psd_model_enum == celerite)
+  {
+
+  }
+  else
+  {
+
+  }
+  
+  var_range_model[i][0] = log(1.0e-10); //noise
+  var_range_model[i++][1] = log(1.0e3);
+
+  if(parset.psdperiod_enum > none)
+  {
+    var_range_model[i][0] = log(1.0e-10);  //Ap
+    var_range_model[i++][1] = log(1.0e6);
+
+    var_range_model[i][0] = log(freq_limit_data_lower); //center
+    var_range_model[i++][1] = log(0.01);
+
+    var_range_model[i][0] = log(1.0e-6);   //sigma
+    var_range_model[i++][1] = log(freq_limit_data_upper);
+  }
+  
+  var_range_model[i][0] = -10.0;  //zero-frequency power
+  var_range_model[i++][1] = 10.0;
+
+  var_range_model[i][0] = -10.0;  //frequency series
+  var_range_model[i++][1] = 10.0;
 
   // variability parameters
-
   for(i=0; i<num_params_psd+1; i++)
   {
     par_range_model[i][0] = var_range_model[i][0];
@@ -989,6 +979,80 @@ void set_par_range()
     par_range_model[i][0] = 0.0;
     par_range_model[i][1] = 1.0;
   }
+  return;
+}
+
+/*
+ *  set psd functions
+ */
+void set_psd_functions()
+{
+  //initialize periodic PSD
+  switch(parset.psdperiod_enum)
+  {
+    case none:
+      parset.num_params_psdperiod = 0;
+      break;
+
+    case gaussian:
+      psdfunc_period = psd_period_gaussian;
+      psdfunc_period_sqrt = psd_period_sqrt_gaussian;
+      parset.num_params_psdperiod = 3;
+      break;
+
+    case lorentz:
+      psdfunc_period = psd_period_lorentz;
+      psdfunc_period_sqrt = psd_period_sqrt_lorentz;
+      parset.num_params_psdperiod = 3; 
+      break;
+
+    default:
+      parset.num_params_psdperiod = 0;
+      break;
+  }
+
+  //initalize PSD functions and number of PSD parameters
+  if(parset.psd_model_enum == simple)
+  {
+    switch(parset.psd_type)
+    {
+      case 0: // single power-law
+       psdfunc = psd_power_law;
+        psdfunc_sqrt = psd_power_law_sqrt;
+        parset.num_params_psd = 3;
+        break;
+  
+      case 1: // damped random walk
+        psdfunc = psd_drw;
+        psdfunc_sqrt = psd_drw_sqrt;
+        parset.num_params_psd = 3;
+        break;
+      
+      case 2: // bending power-law
+        psdfunc = psd_bending_power_law;
+        psdfunc_sqrt = psd_bending_power_law_sqrt;   
+        parset.num_params_psd = 5;
+        break;
+
+      default:
+        psdfunc = psd_power_law;
+        psdfunc_sqrt = psd_power_law_sqrt;
+        parset.num_params_psd = 3;
+        break;
+    }
+  }
+  else if(parset.psd_model_enum == harmonic)
+  {
+    psdfunc = psd_harmonic;
+    psdfunc_sqrt = psd_harmonic_sqrt;   
+    harmonic_term_num = parset.psd_type;
+    parset.num_params_psd = 2+3*(harmonic_term_num-1) + 1; //including noise
+  }
+  else
+  {
+
+  }
+
   return;
 }
 
