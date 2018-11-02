@@ -57,7 +57,8 @@ endif
 EXEC     = recon
 SRC      = ./
 OBJS     = $(SRC)/allvars.o $(SRC)/recon.o $(SRC)/system.o $(SRC)/help.o \
-           $(SRC)/read.o $(SRC)/psd.o $(SRC)/run.o $(SRC)/psd_celerite.o
+           $(SRC)/read.o $(SRC)/psd.o $(SRC)/run.o $(SRC)/psd_celerite.o \
+           $(SRC)/psd_carma.o
 
 OBJSALL =  $(SRC)/main.o $(OBJS)
  

@@ -8,12 +8,14 @@
 
 #ifndef _PROTO_H
 #define _PROTO_H
+#include <complex.h>
 
 int recon_init();
 int recon_end();
 double recon();
 double recon_run(int argc, char **argv);
 int genlc(const void *model);
+int genlc_array(const void *model);
 int get_line_number(char *fname);
 void get_posterior_sample_file(char *fname, char *samplefile);
 int read_data(char *fname, int n, double *t, double *f, double *e);
@@ -39,15 +41,37 @@ double psd_drw(double fk, double *arg);
 double psd_drw_sqrt(double fk, double *arg);
 double psd_power_law(double fk, double *arg);
 double psd_power_law_sqrt(double fk, double *arg);
-double psd_period_gaussian(double fk, double *arg);
-double psd_period_sqrt_gaussian(double fk, double *arg);
-double psd_period_lorentz(double fk, double *arg);
-double psd_period_sqrt_lorentz(double fk, double *arg);
+double psd_gaussian(double fk, double *arg);
+double psd_gaussian_sqrt(double fk, double *arg);
+double psd_lorentz(double fk, double *arg);
+double psd_lorentz_sqrt(double fk, double *arg);
 double psd_bending_power_law(double fk, double *arg);
 double psd_bending_power_law_sqrt(double fk, double *arg);
 
+void psd_drw_array(double *fk, double *arg, double *psd, int n);
+void psd_drw_sqrt_array(double *fk, double *arg, double *psd, int n);
+void psd_power_law_array(double *fk, double *arg, double *psd, int n);
+void psd_power_law_sqrt_array(double *fk, double *arg, double *psd, int n);
+void psd_gaussian_array(double *fk, double *arg, double *psd, int n);
+void psd_gaussian_sqrt_array(double *fk, double *arg, double *psd, int n);
+void psd_lorentz_array(double *fk, double *arg, double *psd, int n);
+void psd_lorentz_sqrt_array(double *fk, double *arg, double *psd, int n);
+void psd_bending_power_law_array(double *fk, double *arg, double *psd, int n);
+void psd_bending_power_law_sqrt_array(double *fk, double *arg, double *psd, int n);
+
 double psd_harmonic(double fk, double *arg);
 double psd_harmonic_sqrt(double fk, double *arg);
+void psd_harmonic_array(double *fk, double *arg, double *psd, int n);
+void psd_harmonic_sqrt_array(double *fk, double *arg, double *psd, int n);
+
+void get_ar_roots(double *theta, complex *roots);
+void get_ma_coefs(double *theta, double * ma_coefs);
+void get_poly_coefs(complex *roots, int n, double *coefs);
+double psd_carma(double fk, double *arg);
+double psd_carma_sqrt(double fk, double *arg);
+void psd_carma_array(double *fk, double *arg, double *psd, int n);
+void psd_carma_sqrt_array(double *fk, double *arg, double *psd, int n);
+
 
 /* system */
 double second();
@@ -71,4 +95,10 @@ double (*psdfunc_sqrt)(double, double *);
 
 double (*psdfunc_period)(double, double *);
 double (*psdfunc_period_sqrt)(double, double *);
+
+void (*psdfunc_array)(double *, double *, double *, int );
+void (*psdfunc_sqrt_array)(double *, double *, double *, int );
+
+void (*psdfunc_period_array)(double *, double *, double *, int );
+void (*psdfunc_period_sqrt_array)(double *, double *, double *, int );
 #endif

@@ -266,24 +266,45 @@ void psd_fit_check(double *freq, double *psd, int nf)
   return;
 }
 
+//======================================================================
+
 double psd_drw(double fk, double *arg)
 {
   double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
 
-  //if(fk < freq_limit_sim)
-  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
-  //else
   return A/(1.0 + pow(fk/fknee, 2.0)) + cnoise;
 }
 
 double psd_drw_sqrt(double fk, double *arg)
 {
   double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
-  //if(fk < freq_limit_sim)
-  //  return A/(1.0 + pow(freq_limit_sim/fknee, 2.0));
-  //else
+
   return sqrt(A/(1.0 + pow(fk/fknee, 2.0))+ cnoise);
 }
+
+void psd_drw_array(double *fk, double *arg, double *psd, int n)
+{
+  double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
+  int i;
+
+  for(i=0; i<n; i++)
+  {
+    psd[i] = A/(1.0 + pow(fk[i]/fknee, 2.0)) + cnoise;
+  }
+  return;
+}
+
+void psd_drw_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
+{
+  double A=exp(arg[0]), fknee=exp(arg[1]), cnoise = exp(arg[2]);
+  int i;
+  for(i=0; i<n; i++)
+  {
+    psd_sqrt[i] = sqrt(A/(1.0 + pow(fk[i]/fknee, 2.0))+ cnoise);
+  }
+}
+
+//======================================================================
 
 double psd_power_law(double fk, double *arg)
 {
@@ -306,6 +327,36 @@ double psd_power_law_sqrt(double fk, double *arg)
     return sqrt(A*pow(parset.freq_limit, -alpha) + cnoise);
     
 }
+
+
+void psd_power_law_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
+{
+  double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
+  int i;
+  
+  for(i=0; i<n; i++)
+  {
+    if(fk[i] > parset.freq_limit)
+      psd_sqrt[i] = sqrt(A * pow(fk[i], -alpha) + cnoise);
+    else
+      psd_sqrt[i] = sqrt(A*pow(parset.freq_limit, -alpha) + cnoise);
+  }
+  return;
+}
+
+void psd_power_law_array(double *fk, double *arg, double *psd, int n)
+{
+  int i;
+  psd_power_law_sqrt_array(fk, arg, psd, n);
+  
+  for(i=0; i<n; i++)
+  {
+    psd[i] = psd[i]*psd[i];
+  }
+  return;
+}
+
+//======================================================================
 
 double psd_bending_power_law(double fk, double *arg)
 {
@@ -333,30 +384,107 @@ double psd_bending_power_law_sqrt(double fk, double *arg)
     return sqrt(A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise);
 }
 
-double psd_period_gaussian(double fk, double *arg)
+
+void psd_bending_power_law_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
+{
+  double A=exp(arg[0]), alpha_hi=arg[1], alpha_lo=(arg[1] - arg[2]);
+  double fc=exp(arg[3]), cnoise=exp(arg[4]);
+  int i;
+
+  for(i=0; i<n; i++)
+  {
+    if(fk[i] > fc)
+      psd_sqrt[i] = sqrt(A * pow(fk[i]/fc, -alpha_hi) + cnoise);
+    else if(fk[i] > parset.freq_limit)
+      psd_sqrt[i] = sqrt(A * pow(fk[i]/fc, -alpha_lo) + cnoise);
+    else
+      psd_sqrt[i] = sqrt(A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise);
+  }
+  return;
+}
+
+void psd_bending_power_law_array(double *fk, double *arg, double *psd, int n)
+{
+  int i;
+  psd_bending_power_law_sqrt_array(fk, arg, psd, n);
+  for(i=0; i<n; i++)
+  {
+    psd[i] = psd[i] * psd[i];
+  }
+  return;
+}
+
+
+//======================================================================
+
+double psd_gaussian(double fk, double *arg)
 {
   double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
 
   return Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (fk - center)/sigma, 2.0 ));
 }
 
-double psd_period_sqrt_gaussian(double fk, double *arg)
+double psd_gaussian_sqrt(double fk, double *arg)
 {
   double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
 
   return sqrt(Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.5 * pow( (fk - center)/sigma, 2.0 )));
 }
 
-double psd_period_lorentz(double fk, double *arg)
+void psd_gaussian_array(double *fk, double *arg, double *psd, int n)
+{
+  double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
+  int i;
+  
+  for(i=0; i<n; i++)
+  {
+    psd[i] = Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (fk[i] - center)/sigma, 2.0 ));
+  }
+}
+
+void psd_gaussian_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
+{
+  double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
+  int i;
+  for(i=0; i<n; i++)
+  {
+    psd_sqrt[i] = sqrt(Ap * 1.0/sqrt(sqrt(2.0*PI))/sigma * exp(-0.5 * pow( (fk[i] - center)/sigma, 2.0 )));
+  }
+}
+
+//======================================================================
+
+double psd_lorentz(double fk, double *arg)
 {
   double Ap=exp(arg[0]), center=exp(arg[1]), width=exp(arg[2]);
 
   return Ap/PI *width/(width*width + pow(fk-center, 2.0));
 }
 
-double psd_period_sqrt_lorentz(double fk, double *arg)
+double psd_lorentz_sqrt(double fk, double *arg)
 {
   double Ap=exp(arg[0]), center=exp(arg[1]), width=exp(arg[2]);
 
   return sqrt( Ap/PI *width/(width*width + pow(fk-center, 2.0)) );
+}
+
+void psd_lorentz_array(double *fk, double *arg, double *psd, int n)
+{
+  double Ap=exp(arg[0]), center=exp(arg[1]), width=exp(arg[2]);
+  int i;
+  for(i=0; i<n; i++)
+  {
+    psd[i] = Ap/PI *width/(width*width + pow(fk[i]-center, 2.0));
+  }
+}
+
+void psd_lorentz_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
+{
+  double Ap=exp(arg[0]), center=exp(arg[1]), width=exp(arg[2]);
+  int i;
+
+  for(i=0; i<n; i++)
+  {
+    psd_sqrt[i] = sqrt( Ap/PI *width/(width*width + pow(fk[i]-center, 2.0)) );
+  }
 }

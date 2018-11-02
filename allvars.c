@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <complex.h>
 #include <mpi.h>
 #include <fftw3.h>
 #include <gsl/gsl_interp.h>
@@ -21,7 +22,6 @@ char proc_name[MPI_MAX_PROCESSOR_NAME];
 int ndata;
 double *flux_data, *time_data, *err_data;
 double time_media, time_cad_min, time_cad_media, flux_data_min, flux_data_max, flux_scale, flux_mean;
-double slope_endmatch;
 
 double freq_limit_data_lower, freq_limit_data_upper;
 
@@ -29,6 +29,7 @@ int nd_sim;
 double DT, V, W;
 double *time_sim, *flux_sim, *flux_data_sim;
 double *flux_sim_mean, *err_sim_mean;
+double *workspace, *workspace_psd;
 
 gsl_interp_accel *gsl_acc_sim;
 gsl_interp  *gsl_linear_sim;
@@ -61,4 +62,5 @@ PARSET parset;
 FILE *finfo;
 
 // for harmonic
-int harmonic_term_num;
+// for carma
+complex *workspace_complex;

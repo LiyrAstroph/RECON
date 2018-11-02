@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <fftw3.h>
 #include <math.h>
+#include <complex.h>
 #include <gsl/gsl_interp.h>
 #include <mpi.h>
 
@@ -25,7 +26,6 @@ extern char proc_name[MPI_MAX_PROCESSOR_NAME];
 extern int ndata;
 extern double *flux_data, *time_data, *err_data;
 extern double time_media, time_cad_min, time_cad_media, flux_data_min, flux_data_max, flux_scale, flux_mean;
-extern double slope_endmatch;
 
 extern double freq_limit_data_lower, freq_limit_data_upper;
 
@@ -33,6 +33,8 @@ extern int nd_sim;
 extern double DT, V, W;
 extern double *time_sim, *flux_sim, *flux_data_sim;
 extern double *flux_sim_mean, *err_sim_mean;
+extern double *workspace, *workspace_psd;
+
 
 extern gsl_interp_accel *gsl_acc_sim;
 extern gsl_interp  *gsl_linear_sim;
@@ -61,24 +63,28 @@ extern int recon_seed;
 
 typedef struct
 {
-  char file_dir[200]; 
-  char param_file[200]; 
-  char file_name[200];
-  char psd_model[20];
-  char psdperiod_model[20];
-  char str_psd_arg[200];
-  char file_sim[200];
+  char file_dir[256]; 
+  char param_file[256]; 
+  char file_name[256];
+  char psd_model[32];
+  char psdperiod_model[32];
+  char str_psd_arg[256];
+  char file_sim[256];
+  char psd_type_str[32];
 
   double V, W;
   double freq_limit;
 
-  int psd_model_enum, psd_type, psdperiod_enum;
+  int psd_type, harmonic_term_num, carma_p, carma_q;
+  double slope_endmatch;
+
+  int psd_model_enum, psdperiod_enum;
   int num_params_psd, num_params_psdperiod;
   double fbad, ferr;
 
   int nd_sim;
   double DT;
-  double psd_arg[20];  // maximal number of arguments is 20.
+  double psd_arg[32];  // maximal number of arguments is 20.
 
   int flag_domain;
   int flag_endmatch;
@@ -89,9 +95,11 @@ extern PARSET parset;
 
 extern FILE *finfo;
 
-enum PSDMODEL {simple, harmonic, celerite};
+enum PSDMODEL {simple, harmonic, carma, celerite};
 enum PSDPERIODMODEL {none, gaussian, lorentz};
 
 // for harmonic
-extern int harmonic_term_num;
+
+// for carma
+extern complex *workspace_complex;
 #endif

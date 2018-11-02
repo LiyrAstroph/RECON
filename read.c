@@ -64,8 +64,8 @@ void read_parset()
     id[nt++] = STRING;
 
     strcpy(tag[nt], "PSDType");
-    addr[nt] = &parset.psd_type;
-    id[nt++] = INT;
+    addr[nt] = &parset.psd_type_str;
+    id[nt++] = STRING;
     
     strcpy(tag[nt], "PSDPeriodModel");
     addr[nt] = &parset.psdperiod_model;
@@ -125,9 +125,12 @@ void read_parset()
     parset.flag_endmatch = 0;
     parset.flag_whitenoise = 0;
     parset.flag_saveoutput = 0;
-    parset.psd_type = -1;
     parset.psd_model_enum = simple;
-    parset.psdperiod_enum = harmonic;
+    parset.psd_type = 0;
+    parset.harmonic_term_num=1;
+    parset.carma_p = 1;
+    parset.carma_q = 0;
+    parset.psdperiod_enum = none;
     parset.flag_domain = 0;
 
     while(!feof(fparam))
@@ -182,18 +185,22 @@ void read_parset()
     if(strcmp(parset.psd_model, "simple") ==0 )
     {
       parset.psd_model_enum = simple;
+      parset.psd_type = atoi(parset.psd_type_str);
     }
     else if(strcmp(parset.psd_model, "harmonic") ==0 )
     {
       parset.psd_model_enum = harmonic;
+      parset.harmonic_term_num = atoi(parset.psd_type_str);
+      printf("%d\n", parset.harmonic_term_num);
     }
-    else if(strcmp(parset.psd_model, "celerite") ==0 )
+    else if(strcmp(parset.psd_model, "carma") ==0 )
     {
-      parset.psd_model_enum = celerite;
+      parset.psd_model_enum = carma;
+      sscanf(parset.psd_type_str, "%d:%d", &parset.carma_p, &parset.carma_q);
     }
     else
     {
-      printf("Incorrect PSDModel=%s.\nPSDModel should [simple, harmonic, celerite].\n", parset.psd_model);
+      printf("Incorrect PSDModel=%s.\nPSDModel should [simple, harmonic, carma].\n", parset.psd_model);
       exit(0);
     }
 
@@ -208,9 +215,27 @@ void read_parset()
     }
     else if(parset.psd_model_enum == harmonic)
     {
-      if(parset.psd_type > 5 || parset.psd_type < 1)
+      if(parset.harmonic_term_num > 5 || parset.harmonic_term_num < 1)
       {
-        printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [1-5].\n", parset.psd_type);
+        printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [1-5].\n", parset.harmonic_term_num);
+        exit(0);
+      }
+    }
+    else if(parset.psd_model_enum == carma)
+    {
+      if(parset.carma_p <= parset.carma_q)
+      {
+        printf("# CARMA order p should be larger than q.\n");
+        exit(0);
+      }
+      if(parset.carma_p > 10 || parset.carma_p <1)
+      {
+        printf("Incorrect CARMA order p=%d.\np should lie in the range [1-10].\n", parset.carma_p);
+        exit(0);
+      }
+      if(parset.carma_q > 9 || parset.carma_p < 0)
+      {
+        printf("Incorrect CARMA order q=%d.\np should lie in the range [0-9].\n", parset.carma_q);
         exit(0);
       }
     }
@@ -238,7 +263,6 @@ void read_parset()
       exit(0);
     }
 
-
     if(parset.V < 1.0)
     {
       printf("Incorrect V=%f.\n V should be larger than 1.\n", parset.V);
@@ -265,13 +289,12 @@ void read_parset()
 
     if(recon_flag_cal_psd == 1)
     {
-      slope_endmatch = 0.0;
+      parset.slope_endmatch = 0.0;
       parset.flag_endmatch = 0;
     }
 
   }
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
-
   return;
 }
 /*!
@@ -298,13 +321,13 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
   fclose(fp);
 
   // end matching
-  slope_endmatch = 0.0; 
+  parset.slope_endmatch = 0.0; 
   if(parset.flag_endmatch == 1)
   {
-    slope_endmatch = (f[n-1] - f[0])/(t[n-1] - t[0]);
+    parset.slope_endmatch = (f[n-1] - f[0])/(t[n-1] - t[0]);
     for(i=0; i<n; i++)
     {
-      f[i] -= (slope_endmatch*(t[i] - t[0]));
+      f[i] -= (parset.slope_endmatch*(t[i] - t[0]));
     }
   }
   

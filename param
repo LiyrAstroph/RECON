@@ -7,19 +7,22 @@
 
 FileDir         .                # file direcotry
 
-FileName        data/ngc5548.txt     # file name
+FileName        data/sim_celerite.txt     # file name
 
 #===============================================
 # psd model configurations
 FlagDomain       0               # 0, frequency; 1, time
 
-PSDModel         simple        # simple, harmonic
-PSDType          0               # 0-2 for simple,0: single power-law
+PSDModel         simple           # simple, harmonic, carma
+
+PSDType          1               # simple,        0: single power-law
                                  #                1: DRW
                                  #                2: bending power-law
-                                 # 1-2 for harmonic, number of haromic terms
+                                 # harmonic, number of haromic terms, 1-5
 
-PSDPeriodModel   none            # None; Gaussian; Lorentz
+                                 # carma, orders p:q, e.g., 2:1
+
+PSDPeriodModel   lorentz            # None; Gaussian; Lorentz
 
 #===============================================
 # MCMC configurations

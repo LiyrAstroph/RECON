@@ -169,7 +169,7 @@ int recon_postproc()
 
       memcpy(posterior_sample+i*size_of_modeltype, post_model, size_of_modeltype);
       
-      genlc(post_model);
+      genlc_array(post_model);
 
       gsl_interp_init(gsl_linear_sim, time_sim, flux_sim, nd_sim);
   
@@ -190,14 +190,14 @@ int recon_postproc()
         //flux_data_sim[j] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[j], gsl_acc_sim);
 
         fprintf(fcon, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale+flux_mean 
-          + slope_endmatch * (time_sim[j] - time_data[0]));
+          + parset.slope_endmatch * (time_sim[j] - time_data[0]));
       }
       fprintf(fcon, "\n");
 
       for(j=0; j<nd_sim; j++)
       {
         fprintf(fcon_all, "%f  %f\n", time_sim[j], flux_sim[j]*flux_scale + flux_mean
-          + slope_endmatch * (time_sim[j] - time_data[0]) );
+          + parset.slope_endmatch * (time_sim[j] - time_data[0]) );
       }
       fprintf(fcon_all, "\n");
 
@@ -219,7 +219,7 @@ int recon_postproc()
     for(j=0; j<nd_sim; j++)
     {
       fprintf(fcon_mean, "%f %e %e\n", time_sim[j], flux_sim_mean[j]*flux_scale+flux_mean
-        + slope_endmatch * (time_sim[j] - time_data[0]), err_sim_mean[j]*flux_scale);
+        + parset.slope_endmatch * (time_sim[j] - time_data[0]), err_sim_mean[j]*flux_scale);
     }
 
     fclose(fp);
@@ -327,12 +327,13 @@ int recon_init()
       
       time_cad_cal();
     }
- 
+
     MPI_Bcast(time_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     MPI_Bcast(flux_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     MPI_Bcast(err_data, ndata, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     
     MPI_Bcast(&time_cad_media, 1, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
+    MPI_Bcast(&parset.slope_endmatch, 1, MPI_DOUBLE, roottask, MPI_COMM_WORLD);
     
     time_media = (time_data[ndata-1] + time_data[0])/2.0;
     time_cad_min = (time_data[ndata-1] - time_data[0])/2.0;
@@ -387,7 +388,7 @@ int recon_init()
       fprintf(finfo, "mean data cad.: %f\n", (time_data[ndata-1] - time_data[0])/(ndata -1));
 
       fprintf(finfo, "end mathcing flag: %d\n", parset.flag_endmatch);
-      fprintf(finfo, "end mathcing slope: %f\n", slope_endmatch);
+      fprintf(finfo, "end mathcing slope: %f\n", parset.slope_endmatch);
       fprintf(finfo, "level-dependent sampling flag: %d\n", recon_flag_limits);
     }
 
@@ -436,8 +437,11 @@ int recon_init()
   gsl_linear_sim = gsl_interp_alloc(gsl_interp_linear, nd_sim);
 
   fft_work = (fftw_complex *)fftw_malloc( nd_sim * sizeof(fftw_complex));
-
   pfft = fftw_plan_dft_c2r_1d(nd_sim, fft_work, flux_sim, FFTW_MEASURE);
+
+  workspace = (double *)malloc(nd_sim * sizeof(double));
+  workspace_psd = (complex *)malloc( 100 * sizeof(complex) );
+  workspace_complex = (complex *)malloc( 100 * sizeof(complex) );
   
   if(thistask == roottask)
   {
@@ -495,7 +499,10 @@ int recon_end()
     free(err_data);
     free(flux_data_sim);
   }
-
+  
+  free(workspace);
+  free(workspace_psd);
+  free(workspace_complex);
   return 0;
 }
 
@@ -508,21 +515,24 @@ int genlc(const void *model)
   double *arg, freq, psd_sqrt, norm;
   double *pm = (double *)model;
 
-  arg = malloc(num_params_psd * sizeof(double));
-  memcpy(arg, pm, num_params_psd * sizeof(double));
+  arg = pm;
 
   fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
   fft_work[0][1] = 0.0;
 
   for(i=0; i<nd_sim/2-1; i++)
   {
-    fft_work[i+1][0] = pm[num_params_psd+1+2*i];
-    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1];
+    freq = (i+1)*1.0/(nd_sim * DT);
+    psd_sqrt = psdfunc_sqrt(freq, arg)/sqrt(2.0);
+    fft_work[i+1][0] = pm[num_params_psd+1+2*i] * psd_sqrt;
+    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1] * psd_sqrt;
   }
-  fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1];
+  freq = nd_sim/2*1.0/(nd_sim * DT);
+  psd_sqrt = psdfunc_sqrt(freq, arg);
+  fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1] * psd_sqrt;
   fft_work[nd_sim/2][1] = 0.0;
   
-  for(i=1; i<nd_sim/2; i++)
+  /*for(i=1; i<nd_sim/2; i++)
   {
     freq = i*1.0/(nd_sim * DT);
     psd_sqrt = psdfunc_sqrt(freq, arg)/sqrt(2.0);
@@ -531,7 +541,7 @@ int genlc(const void *model)
   }
   freq = nd_sim/2*1.0/(nd_sim * DT);
   psd_sqrt = psdfunc_sqrt(freq, arg);
-  fft_work[nd_sim/2][0] *= psd_sqrt;
+  fft_work[nd_sim/2][0] *= psd_sqrt; */
   
   // add periodic component
   if(parset.psdperiod_enum > none)
@@ -555,7 +565,57 @@ int genlc(const void *model)
     flux_sim[i] = flux_sim[i] * norm;
   }
 
-  free(arg);
+  return 0;
+}
+
+int genlc_array(const void *model)
+{
+  int i;
+  double *arg, *freq, *psd_sqrt, norm;
+  double *pm = (double *)model;
+
+  arg = pm;
+  freq = workspace;
+  psd_sqrt = workspace + nd_sim/2;
+
+  for(i=0; i<nd_sim/2; i++)
+  {
+    freq[i] = (i+1)*1.0/(nd_sim * DT);
+  }
+  psdfunc_sqrt_array(freq, arg, psd_sqrt, nd_sim/2);
+
+  fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
+  fft_work[0][1] = 0.0;
+
+  for(i=0; i<nd_sim/2-1; i++)
+  {
+    fft_work[i+1][0] = pm[num_params_psd+1+2*i] * psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
+  }
+  fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1] * psd_sqrt[nd_sim/2-1];
+  fft_work[nd_sim/2][1] = 0.0;
+
+  // add periodic component
+  if(parset.psdperiod_enum > none)
+  {
+    psdfunc_period_sqrt_array(freq, arg+num_params_psd-3, psd_sqrt, nd_sim/2);
+    for(i=1; i<nd_sim/2+1; i++)
+    {
+      fft_work[i][0] += psd_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psd_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+    }
+  }
+  
+  fftw_execute(pfft);
+
+  // normalization factor in line with the continuous transform
+  norm = 1.0/sqrt(nd_sim) * sqrt(nd_sim/(2.0 *nd_sim * DT));
+  for(i=0; i<nd_sim; i++)
+  {
+    time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
+    flux_sim[i] = flux_sim[i] * norm;
+  }
+
   return 0;
 }
 
@@ -564,7 +624,7 @@ double prob_recon(const void *model)
   double prob;
   int i;
 
-  genlc(model);
+  genlc_array(model);
   
   gsl_interp_init(gsl_linear_sim, time_sim, flux_sim, nd_sim);
   
@@ -915,24 +975,52 @@ void set_par_range()
     var_range_model[i][0] = fmin(-10.0, log(freq_limit_data_lower));
     var_range_model[i++][1] = fmax(10.0, log(freq_limit_data_upper));
 
-    for(j=1; j<harmonic_term_num; j++)
+    for(j=1; j<parset.harmonic_term_num; j++)
     {
       var_range_model[i][0] = -10.0;
       var_range_model[i++][1] =  10.0;
 
       var_range_model[i][0] = log(freq_limit_data_lower) 
-           + (j-1) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/(harmonic_term_num-1);
+           + (j-1) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/(parset.harmonic_term_num-1);
       var_range_model[i++][1] =  log(freq_limit_data_lower) 
-           + (j) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/(harmonic_term_num-1);
+           + (j) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/(parset.harmonic_term_num-1);
 
       var_range_model[i][0] = log(1.0001);
       var_range_model[i++][1] =  log(200.0);
     }
 
   }
-  else if(parset.psd_model_enum == celerite)
+  else if(parset.psd_model_enum == carma)
   {
+    i=0;
+    
+    var_range_model[i][0] = -10.0; //sigma
+    var_range_model[i++][1] =  10.0;
 
+    for(j=0; j<parset.carma_p/2; j++)
+    {
+      var_range_model[i][0] = log(freq_limit_data_lower/(2.0*PI));  // Lorentzian width
+      var_range_model[i++][1] =  log(freq_limit_data_upper/(2.0*PI));
+
+      //Lorentz centriod
+      var_range_model[i][0] = log(freq_limit_data_lower) 
+           + (j) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/((int)(parset.carma_p/2));
+      var_range_model[i++][1] =  log(freq_limit_data_lower) 
+           + (j+1) * (log(freq_limit_data_upper) - log(freq_limit_data_lower))/((int)(parset.carma_p/2));
+    }
+    if(parset.carma_p%2 == 1)
+    {
+      var_range_model[i][0] = -10.0;
+      var_range_model[i++][1] =  10.0;
+    }
+
+    // mean-averaging coefficients
+    for(j=0; j<parset.carma_q; j++)
+    {
+      var_range_model[i][0] = -10.0;
+      var_range_model[i++][1] =  log(1000.0);
+    }
+    
   }
   else
   {
@@ -948,7 +1036,7 @@ void set_par_range()
     var_range_model[i++][1] = log(1.0e6);
 
     var_range_model[i][0] = log(freq_limit_data_lower); //center
-    var_range_model[i++][1] = log(0.01);
+    var_range_model[i++][1] = log(freq_limit_data_upper);
 
     var_range_model[i][0] = log(1.0e-6);   //sigma
     var_range_model[i++][1] = log(freq_limit_data_upper);
@@ -991,22 +1079,26 @@ void set_psd_functions()
   switch(parset.psdperiod_enum)
   {
     case none:
+      psdfunc_period_array = NULL;
+      psdfunc_period_sqrt_array = NULL;
       parset.num_params_psdperiod = 0;
       break;
 
     case gaussian:
-      psdfunc_period = psd_period_gaussian;
-      psdfunc_period_sqrt = psd_period_sqrt_gaussian;
+      psdfunc_period_array = psd_gaussian_array;
+      psdfunc_period_sqrt_array = psd_gaussian_sqrt_array;
       parset.num_params_psdperiod = 3;
       break;
 
     case lorentz:
-      psdfunc_period = psd_period_lorentz;
-      psdfunc_period_sqrt = psd_period_sqrt_lorentz;
+      psdfunc_period_array = psd_lorentz_array;
+      psdfunc_period_sqrt_array = psd_lorentz_sqrt_array;
       parset.num_params_psdperiod = 3; 
       break;
 
     default:
+      psdfunc_period_array = NULL;
+      psdfunc_period_sqrt_array = NULL;
       parset.num_params_psdperiod = 0;
       break;
   }
@@ -1017,26 +1109,26 @@ void set_psd_functions()
     switch(parset.psd_type)
     {
       case 0: // single power-law
-       psdfunc = psd_power_law;
-        psdfunc_sqrt = psd_power_law_sqrt;
+        psdfunc_array = psd_power_law_array;
+        psdfunc_sqrt_array = psd_power_law_sqrt_array;
         parset.num_params_psd = 3;
         break;
   
       case 1: // damped random walk
-        psdfunc = psd_drw;
-        psdfunc_sqrt = psd_drw_sqrt;
+        psdfunc_array = psd_drw_array;
+        psdfunc_sqrt_array = psd_drw_sqrt_array;
         parset.num_params_psd = 3;
         break;
       
       case 2: // bending power-law
-        psdfunc = psd_bending_power_law;
-        psdfunc_sqrt = psd_bending_power_law_sqrt;   
+        psdfunc_array = psd_bending_power_law_array;
+        psdfunc_sqrt_array = psd_bending_power_law_sqrt_array;   
         parset.num_params_psd = 5;
         break;
 
       default:
-        psdfunc = psd_power_law;
-        psdfunc_sqrt = psd_power_law_sqrt;
+        psdfunc_array = psd_power_law_array;
+        psdfunc_sqrt_array = psd_power_law_sqrt_array;
         parset.num_params_psd = 3;
         break;
     }
@@ -1044,9 +1136,18 @@ void set_psd_functions()
   else if(parset.psd_model_enum == harmonic)
   {
     psdfunc = psd_harmonic;
-    psdfunc_sqrt = psd_harmonic_sqrt;   
-    harmonic_term_num = parset.psd_type;
-    parset.num_params_psd = 2+3*(harmonic_term_num-1) + 1; //including noise
+    psdfunc_sqrt = psd_harmonic_sqrt; 
+
+    psdfunc_array = psd_harmonic_array;
+    psdfunc_sqrt_array = psd_harmonic_sqrt_array;   
+ 
+    parset.num_params_psd = 2+3*(parset.harmonic_term_num-1) + 1; //including noise
+  }
+  else if(parset.psd_model_enum == carma)
+  {
+    psdfunc_array = psd_carma_array;
+    psdfunc_sqrt_array = psd_carma_sqrt_array;
+    parset.num_params_psd = parset.carma_p + parset.carma_q + 1 + 1; 
   }
   else
   {
@@ -1125,7 +1226,7 @@ void sim()
     pm[i] = gsl_rng_uniform(gsl_r);
   }
 
-  genlc(model);
+  genlc_array(model);
 
   // add Gaussian noise
   for(i=0; i<nd_sim; i++)
@@ -1189,6 +1290,8 @@ void sim()
 
 }
 
+
+
 void test()
 {
   int i;
@@ -1222,7 +1325,7 @@ void test()
     pm[num_params_psd + i] = gsl_ran_ugaussian(gsl_r);
   }
 
-  genlc(model);
+  genlc_array(model);
   
   for(i=0; i<nd_sim; i++)
   {
