@@ -26,7 +26,7 @@ int psddata_cal()
   FILE *fp;
   int i, nf;
   double *freq, *psd;
-  char fname[200], str1[200], str2[200], *pstr;
+  char fname[256], str1[256], str2[256], *pstr;
 
   freq = malloc(ndata * sizeof(double));
   psd = malloc(ndata * sizeof(double));

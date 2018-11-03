@@ -29,7 +29,7 @@ void read_parset()
 
     FILE *fparam;
     int i, j, nt;
-    char str[200], buf1[200], buf2[200], buf3[200];
+    char str[256], buf1[256], buf2[256], buf3[256];
     int id[MAXTAGS];
     void *addr[MAXTAGS];
     char tag[MAXTAGS][50];
@@ -111,7 +111,7 @@ void read_parset()
     addr[nt] = &parset.ferr;
     id[nt++] = DOUBLE;
     
-    char fname[200];
+    char fname[256];
     sprintf(fname, "%s", parset.param_file);
     
     fparam = fopen(fname, "r");
@@ -137,7 +137,7 @@ void read_parset()
     {
       sprintf(str,"empty");
 
-      fgets(str, 200, fparam);
+      fgets(str, 256, fparam);
       if(sscanf(str, "%s%s%s", buf1, buf2, buf3)<2)
         continue;
       if(buf1[0]=='#')
@@ -314,7 +314,7 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
 {
   FILE *fp;
   int i;
-  char buf[200];
+  char buf[256];
 
   fp = fopen(fname, "r");
   if(fp==NULL)
@@ -350,31 +350,61 @@ int read_data(char *fname, int n, double *t, double *f, double *e)
 void read_sim_arg()
 {
   int i;
+  char *str, *pstr;
+  str = parset.str_psd_arg;
 
+  //read parameter values
+  for(i=0; i<num_params_psd; i++)
+  {
+    if(sscanf(str, "%lf", &parset.psd_arg[i]) < 1)
+    {
+      if(thistask == roottask)
+      {
+        printf("# PSDArg lacks inputs. Only %d values specified.\n", i);
+      }
+      exit(0);
+    }
+    
+    if(thistask == roottask)
+      printf("%d: %f\n", i, parset.psd_arg[i]);
+    
+    if(i >= num_params_psd-1)
+      break;
+
+    pstr = strchr(str, ':');
+    if(pstr == NULL)
+    {
+      if(thistask == roottask)
+      {
+        printf("# PSDArg lacks inputs. Only %d values specified.\n", i+1);
+      }
+      exit(0);
+    }
+    str = pstr+1;
+  }
+  
   if(parset.psd_model_enum == simple)
   {
+    if(parset.psd_arg[0] < 0.0)
+    {
+      if(thistask == roottask)
+      {
+        printf("# Incorrect 1st PSDArg.\n");
+        exit(0);
+      }
+    }
+    else if(parset.psd_arg[0] == 0.0)
+    {
+      parset.psd_arg[0] = -DBL_MAX;
+    }
+    else
+    {
+      parset.psd_arg[0] = log(parset.psd_arg[0]);
+    }
+
     switch(parset.psd_type)
     {
-      case 0: // single power-law
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
-          
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-          
+      case 0: // single power-law               
         if(parset.psd_arg[2] < 0.0)
         {
           if(thistask == roottask)
@@ -394,26 +424,8 @@ void read_sim_arg()
       
       break;
     
-      case 1: // damped random walk
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2]);
-   
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-   
+      case 1: // damped random walk   
+           
         if(parset.psd_arg[1] <=0.0)
         {
           if(thistask == roottask)
@@ -447,25 +459,7 @@ void read_sim_arg()
         break;
         
       case 2: // bending power-law
-        sscanf(parset.str_psd_arg, "%lf:%lf:%lf:%lf:%lf", &parset.psd_arg[0], &parset.psd_arg[1], &parset.psd_arg[2],
-                                                              &parset.psd_arg[3], &parset.psd_arg[4]);
-        if(parset.psd_arg[0] < 0.0)
-        {
-          if(thistask == roottask)
-          {
-            printf("# Incorrect 1st PSDArg.\n");
-            exit(0);
-          }
-        }
-        else if(parset.psd_arg[0] == 0.0)
-        {
-          parset.psd_arg[0] = -DBL_MAX;
-        }
-        else
-        {
-          parset.psd_arg[0] = log(parset.psd_arg[0]);
-        }
-   
+           
         if(parset.psd_arg[3] <=0.0)
         {
           if(thistask == roottask)
@@ -505,21 +499,8 @@ void read_sim_arg()
         break;
     }
     
-    char *str, *pstr;
-    str = parset.str_psd_arg;
-   
-    for(i=0; i<parset.num_params_psd; i++)
-    {
-      pstr = strchr(str, ':');
-      str = pstr+1;
-    }
-    
     if(parset.psdperiod_enum > none)
-    {
-      sscanf(str, "%lf:%lf:%lf", &parset.psd_arg[parset.num_params_psd+0], 
-                                 &parset.psd_arg[parset.num_params_psd+1], 
-                                 &parset.psd_arg[parset.num_params_psd+2]);
-      
+    {      
       i = parset.num_params_psd+0;
       if(parset.psd_arg[i] < 0.0)
       {
@@ -568,12 +549,54 @@ void read_sim_arg()
     }
   }
 
-  /*if(thistask == roottask)
+  // harmonic PSD
+  if(parset.psd_model_enum == harmonic)
   {
-    for(i=0; i<num_params_psd; i++)
+    for(i=0; i<2+3*(parset.harmonic_term_num-1)+1; i++)
     {
-      printf("%e\n", parset.psd_arg[i]);
+      if(parset.psd_arg[i] < 0.0)
+      {
+        if(thistask == roottask)
+        {
+          printf("# Incorrect 1st PSDArg.\n");
+          exit(0);
+        }
+      }
+      else if(parset.psd_arg[i] == 0.0)
+      {
+        parset.psd_arg[i] = -DBL_MAX;
+      }
+      else
+      {
+        parset.psd_arg[i] = log(parset.psd_arg[i]);
+      }
     }
-  }*/
+  }
+ 
+
+  //carma PSD
+  if(parset.psd_model_enum == carma)
+  {
+    for(i=0; i<parset.carma_p + parset.carma_q +1 +1; i++)
+    {
+      if(parset.psd_arg[i] < 0.0)
+      {
+        if(thistask == roottask)
+        {
+          printf("# Incorrect 1st PSDArg.\n");
+          exit(0);
+        }
+      }
+      else if(parset.psd_arg[i] == 0.0)
+      {
+        parset.psd_arg[i] = -DBL_MAX;
+      }
+      else
+      {
+        parset.psd_arg[i] = log(parset.psd_arg[i]);
+      }
+    }
+  }
+
   return;
 }

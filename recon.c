@@ -440,7 +440,7 @@ int recon_init()
   pfft = fftw_plan_dft_c2r_1d(nd_sim, fft_work, flux_sim, FFTW_MEASURE);
 
   workspace = (double *)malloc(nd_sim * sizeof(double));
-  workspace_psd = (complex *)malloc( 100 * sizeof(complex) );
+  workspace_psd = (double *)malloc( 100 * sizeof(complex) );
   workspace_complex = (complex *)malloc( 100 * sizeof(complex) );
   
   if(thistask == roottask)
