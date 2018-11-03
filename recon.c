@@ -428,10 +428,21 @@ int recon_init()
   set_par_range();
   set_par_fix();
 
+  // normalization factor in line with the continuous transform
+  norm_psd = 1.0/sqrt(nd_sim) * sqrt(nd_sim/(2.0 *nd_sim * DT));
+  // normalization factor for likelihood probability
+  norm_prob = -0.5*ndata*log(2.0*PI);
+  for(i=0; i<ndata; i++)
+    norm_prob += (-log(err_data[i]));
+
   time_sim = malloc(nd_sim * sizeof(double));
   flux_sim = malloc(nd_sim * sizeof(double));
   flux_sim_mean = malloc(nd_sim * sizeof(double));
   err_sim_mean = malloc(nd_sim * sizeof(double));
+  for(i=0; i<nd_sim; i++)
+  {
+    time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
+  }
   
   gsl_acc_sim = gsl_interp_accel_alloc();
   gsl_linear_sim = gsl_interp_alloc(gsl_interp_linear, nd_sim);
@@ -439,10 +450,16 @@ int recon_init()
   fft_work = (fftw_complex *)fftw_malloc( nd_sim * sizeof(fftw_complex));
   pfft = fftw_plan_dft_c2r_1d(nd_sim, fft_work, flux_sim, FFTW_MEASURE);
 
+  freq_array = (double *)malloc(nd_sim/2*sizeof(double));
   workspace = (double *)malloc(nd_sim * sizeof(double));
   workspace_psd = (double *)malloc( 100 * sizeof(complex) );
   workspace_complex = (complex *)malloc( 100 * sizeof(complex) );
   
+  for(i=0; i<nd_sim/2; i++)
+  {
+    freq_array[i] = (i+1)*1.0/(nd_sim * DT);
+  }
+
   if(thistask == roottask)
   {
     fclose(finfo);
@@ -499,7 +516,7 @@ int recon_end()
     free(err_data);
     free(flux_data_sim);
   }
-  
+  free(freq_array);
   free(workspace);
   free(workspace_psd);
   free(workspace_complex);
@@ -512,7 +529,7 @@ int recon_end()
 int genlc(const void *model)
 {
   int i;
-  double *arg, freq, psd_sqrt, norm;
+  double *arg, freq, psd_sqrt;
   double *pm = (double *)model;
 
   arg = pm;
@@ -557,12 +574,10 @@ int genlc(const void *model)
   
   fftw_execute(pfft);
 
-  // normalization factor in line with the continuous transform
-  norm = 1.0/sqrt(nd_sim) * sqrt(nd_sim/(2.0 *nd_sim * DT));
+  //normalization
   for(i=0; i<nd_sim; i++)
   {
-    time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
-    flux_sim[i] = flux_sim[i] * norm;
+    flux_sim[i] = flux_sim[i] * norm_psd;
   }
 
   return 0;
@@ -571,18 +586,12 @@ int genlc(const void *model)
 int genlc_array(const void *model)
 {
   int i;
-  double *arg, *freq, *psd_sqrt, norm;
+  double *arg, *freq, *psd_sqrt, *psdperiod_sqrt;
   double *pm = (double *)model;
 
   arg = pm;
-  freq = workspace;
-  psd_sqrt = workspace + nd_sim/2;
-
-  for(i=0; i<nd_sim/2; i++)
-  {
-    freq[i] = (i+1)*1.0/(nd_sim * DT);
-  }
-  psdfunc_sqrt_array(freq, arg, psd_sqrt, nd_sim/2);
+  psd_sqrt = workspace;
+  psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
 
   fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
   fft_work[0][1] = 0.0;
@@ -598,22 +607,21 @@ int genlc_array(const void *model)
   // add periodic component
   if(parset.psdperiod_enum > none)
   {
-    psdfunc_period_sqrt_array(freq, arg+num_params_psd-3, psd_sqrt, nd_sim/2);
+    psdperiod_sqrt = psd_sqrt + nd_sim/2;
+    psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
     for(i=1; i<nd_sim/2+1; i++)
     {
-      fft_work[i][0] += psd_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += psd_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
   }
   
   fftw_execute(pfft);
 
-  // normalization factor in line with the continuous transform
-  norm = 1.0/sqrt(nd_sim) * sqrt(nd_sim/(2.0 *nd_sim * DT));
+  // normalization
   for(i=0; i<nd_sim; i++)
   {
-    time_sim[i] = (i - nd_sim/2.0) * DT  + time_media;
-    flux_sim[i] = flux_sim[i] * norm;
+    flux_sim[i] = flux_sim[i] * norm_psd;
   }
 
   return 0;
@@ -636,10 +644,9 @@ double prob_recon(const void *model)
   prob = 0.0;
   for(i=0; i<ndata; i++)
   {
-    prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]) 
-            -log(err_data[i]);
+    prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]);
   }
-  prob += -0.5*ndata*log(2.0*PI);
+  prob += norm_prob;
   return prob;
 }
 

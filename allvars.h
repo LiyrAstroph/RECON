@@ -33,6 +33,8 @@ extern int nd_sim;
 extern double DT, V, W;
 extern double *time_sim, *flux_sim, *flux_data_sim;
 extern double *flux_sim_mean, *err_sim_mean;
+extern double *freq_array;
+extern double norm_psd, norm_prob;
 extern double *workspace, *workspace_psd;
 
 

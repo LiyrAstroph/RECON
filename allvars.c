@@ -29,6 +29,8 @@ int nd_sim;
 double DT, V, W;
 double *time_sim, *flux_sim, *flux_data_sim;
 double *flux_sim_mean, *err_sim_mean;
+double *freq_array;
+double norm_psd, norm_prob;
 double *workspace, *workspace_psd;
 
 gsl_interp_accel *gsl_acc_sim;
