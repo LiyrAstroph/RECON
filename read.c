@@ -177,7 +177,7 @@ void read_parset()
     // check domain
     if(parset.flag_domain != 0)
     {
-      printf("Currently only support fequency domain.\n Set FlagDomain to be 0.\n");
+      printf("# Currently only support fequency domain.\n Set FlagDomain to be 0.\n");
       exit(0);
     }
 
@@ -191,7 +191,6 @@ void read_parset()
     {
       parset.psd_model_enum = harmonic;
       parset.harmonic_term_num = atoi(parset.psd_type_str);
-      printf("%d\n", parset.harmonic_term_num);
     }
     else if(strcmp(parset.psd_model, "carma") ==0 )
     {
@@ -200,16 +199,16 @@ void read_parset()
     }
     else
     {
-      printf("Incorrect PSDModel=%s.\nPSDModel should [simple, harmonic, carma].\n", parset.psd_model);
+      printf("# Incorrect PSDModel=%s.\nPSDModel should [simple, harmonic, carma].\n", parset.psd_model);
       exit(0);
     }
-
+    
     // check psd type
     if(parset.psd_model_enum == simple)
     {
       if(parset.psd_type > 2 || parset.psd_type <0)
       {
-        printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [0-2].\n", parset.psd_type);
+        printf("# Incorrect PSDModel=%d.\nPSDModel should lie in the range [0-2].\n", parset.psd_type);
         exit(0);
       }
     }
@@ -217,9 +216,14 @@ void read_parset()
     {
       if(parset.harmonic_term_num > 5 || parset.harmonic_term_num < 1)
       {
-        printf("Incorrect PSDModel=%d.\nPSDModel should lie in the range [1-5].\n", parset.harmonic_term_num);
+        printf("# Incorrect PSDModel=%d.\nPSDModel should lie in the range [1-5].\n", parset.harmonic_term_num);
         exit(0);
       }
+
+      //periodic PSD only valid for "simple" case
+      strcpy(parset.psdperiod_model, "none");
+      printf("# Reset PSDPeriodModel to be none.\n");
+
     }
     else if(parset.psd_model_enum == carma)
     {
@@ -230,20 +234,25 @@ void read_parset()
       }
       if(parset.carma_p > 10 || parset.carma_p <1)
       {
-        printf("Incorrect CARMA order p=%d.\np should lie in the range [1-10].\n", parset.carma_p);
+        printf("# Incorrect CARMA order p=%d.\np should lie in the range [1-10].\n", parset.carma_p);
         exit(0);
       }
       if(parset.carma_q > 9 || parset.carma_p < 0)
       {
-        printf("Incorrect CARMA order q=%d.\np should lie in the range [0-9].\n", parset.carma_q);
+        printf("# Incorrect CARMA order q=%d.\np should lie in the range [0-9].\n", parset.carma_q);
         exit(0);
       }
+      //periodic PSD only valid for "simple" case
+      strcpy(parset.psdperiod_model, "none");
+      printf("# Reset PSDPeriodModel to be none.\n");
     }
     else
     {
-
+      //periodic PSD only valid for "simple" case
+      strcpy(parset.psdperiod_model, "none");
+      printf("# Reset PSDPeriodModel to be none.\n");
     }
-
+    
     // check periodic PSD model
     if(strcmp(parset.psdperiod_model, "none") ==0 )
     {
@@ -262,7 +271,7 @@ void read_parset()
       printf("Incorrect PSDPeriodModel=%s.\nPSDPeriodModel should [none, gaussian, lorentz].\n", parset.psdperiod_model);
       exit(0);
     }
-
+    
     if(parset.V < 1.0)
     {
       printf("Incorrect V=%f.\n V should be larger than 1.\n", parset.V);
@@ -295,6 +304,7 @@ void read_parset()
 
   }
   MPI_Bcast(&parset, sizeof(parset), MPI_BYTE, roottask, MPI_COMM_WORLD);
+
   return;
 }
 /*!
