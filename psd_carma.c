@@ -129,11 +129,11 @@ void psd_carma_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
 
   for(j=0; j<n; j++)
   {
-    ar_poly = 0.0;
-    ma_poly = 0.0;
-    for(i=0; i<=parset.carma_p; i++)
+    ar_poly = ar_coefs[0];
+    ma_poly = ma_coefs[0];
+    for(i=1; i<=parset.carma_p; i++)
     {
-      tmp = cpow(2.0*PI*fk[j]*I, i);
+      tmp = freq_array_pow[i-1][j];
       ar_poly += ar_coefs[i] * tmp;
       ma_poly += ma_coefs[i] * tmp;
     }

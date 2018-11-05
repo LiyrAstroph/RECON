@@ -30,6 +30,7 @@ double DT, V, W;
 double *time_sim, *flux_sim, *flux_data_sim;
 double *flux_sim_mean, *err_sim_mean;
 double *freq_array;
+complex **freq_array_pow;
 int idx_limit;
 double norm_psd, norm_prob;
 double *workspace_psd;

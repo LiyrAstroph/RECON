@@ -206,7 +206,7 @@ int recon_postproc()
           + parset.slope_endmatch * (time_sim[j] - time_data[0]) );
       }
       fprintf(fcon_all, "\n");
-      
+
     }
 
     for(j=0; j<nd_sim; j++)
@@ -243,7 +243,7 @@ int recon_postproc()
 int recon_init()
 {
   char fname[200];
-  int i;
+  int i, j;
   double Tall, Tmin, Tmax;
  
   /* set the root task */
@@ -463,7 +463,7 @@ int recon_init()
   freq_array = (double *)malloc(nd_sim/2*sizeof(double));
   workspace_psd = (double *)malloc( 100 * sizeof(complex) );
   workspace_complex = (complex *)malloc( 100 * sizeof(complex) );
-  
+
   // initialize frequency grid array
   for(i=0; i<nd_sim/2; i++)
   {
@@ -478,6 +478,26 @@ int recon_init()
   {
     idx_limit = (int)((parset.freq_limit - freq_array[0])/(freq_array[1] - freq_array[0])) + 1;
   }
+
+  // factor (2*PI*f*I)**k for CARMA process 
+  if(parset.psd_model_enum == carma)
+  {
+    freq_array_pow = malloc((parset.carma_p) * sizeof(complex *));
+    for(i=0; i<parset.carma_p; i++)
+    {
+      freq_array_pow[i] = (complex *)malloc(nd_sim/2 * sizeof(complex));
+    }
+
+    for(i=0; i<nd_sim/2; i++)
+    {
+      freq_array_pow[0][i] = 2.0*PI*freq_array[i] * I;
+      for(j=1; j<parset.carma_p; j++)
+      {
+        freq_array_pow[j][i] = freq_array_pow[j-1][i] * (2.0*PI*freq_array[i] * I);
+      }
+    }
+  }
+
 
   which_parameter_update = -1;
   which_parameter_update_prev = malloc(num_particles * sizeof(int));
@@ -548,6 +568,15 @@ int recon_end()
   free(freq_array);
   free(workspace_psd);
   free(workspace_complex);
+  
+  if(parset.psd_model_enum == carma)
+  {
+    for(i=0; i<parset.carma_p; i++)
+    {
+      free(freq_array_pow[i]);
+    }
+    free(freq_array_pow);
+  }
 
   free(which_parameter_update_prev);
   for(i=0; i<num_particles; i++)
