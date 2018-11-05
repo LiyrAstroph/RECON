@@ -333,14 +333,16 @@ void psd_power_law_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
 {
   double A=exp(arg[0]), alpha=arg[1], cnoise=exp(arg[2]);
   int i;
-  
-  for(i=0; i<n; i++)
+
+  for(i=0; i<idx_limit; i++)
   {
-    if(fk[i] > parset.freq_limit)
-      psd_sqrt[i] = sqrt(A * pow(fk[i], -alpha) + cnoise);
-    else
-      psd_sqrt[i] = sqrt(A*pow(parset.freq_limit, -alpha) + cnoise);
+    psd_sqrt[i] = sqrt(A*pow(parset.freq_limit, -alpha) + cnoise);
   }
+  for(i=idx_limit; i<n; i++)
+  {
+    psd_sqrt[i] = sqrt(A * pow(fk[i], -alpha) + cnoise);
+  }
+
   return;
 }
 

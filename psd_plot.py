@@ -1,0 +1,199 @@
+#
+# a python script for showing results.
+#
+# Yan-Rong Li, liyanrong@mail.ihep.ac.cn
+# Nov 3, 2018
+
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+
+def read_params():
+  """
+  read parameter file
+  """
+  fp = open("param")
+
+  tags = ["PSDModel", "PSDType", "PSDPeriodModel", "FileName"]
+  params={}
+
+  for line in fp.readlines():
+    if line[0] == "#" or line.strip() == "":
+      continue
+
+    sp = line.split()
+    for tag in tags:
+      if tag == sp[0]:
+        params[tag] = sp[1]
+    
+  fp.close()
+  
+  return params
+
+def psd_harmonic(params, freq, arg):
+  """
+  PSD function for harmonic.
+  """
+  harmonic_term_num = int(params["PSDType"])
+  psd = np.zeros(freq.shape)
+  S1 = np.exp(arg[0])
+  omega1_sqr = np.exp(2.0*arg[1])
+  psd[:] += S1 * omega1_sqr**2/((freq**2 - omega1_sqr)**2 + 2*omega1_sqr * freq**2)
+    
+  for j in xrange(harmonic_term_num-1):
+    S2 = np.exp(arg[2+j*3])
+    omega2_sqr = np.exp(2.0*arg[2+j*3+1])
+    Q_sqr = (np.exp(arg[2+j*3+2])-1.0)**2/4.0
+    psd[:] += S2 * omega2_sqr**2/((freq**2 - omega2_sqr)**2 + omega2_sqr * freq**2/Q_sqr)
+    
+  psd[:] *= np.sqrt(2.0/np.pi)
+   
+  return psd
+
+def harmonic_plot(params):
+  """
+  plot results for harmonic model
+  """
+  lc = np.loadtxt(params["FileName"])
+  lc_recon = np.loadtxt("data/recon_mean.txt")
+  harmonic_term_num = int(params["PSDType"])
+  num_params = 2 + 3*(harmonic_term_num - 1) + 1
+  sample = np.loadtxt("data/posterior_sample.txt", usecols=(range(num_params)))
+  
+  freq = np.logspace(np.log10(1.0/(lc[-1, 0]-lc[0, 0])), np.log10(len(lc[:, 0])/(lc[-1, 0]-lc[0, 0])), 1000)
+  psd = np.zeros((sample.shape[0], 1000))
+  
+  fig = plt.figure(figsize=(15, 4))
+  ax = fig.add_subplot(121)
+  
+  ax.errorbar(lc[:, 0], lc[:, 1], yerr = lc[:, 2], ls='none', marker='o', color='k')
+  ax.plot(lc_recon[:, 0], lc_recon[:, 1])
+  ax.fill_between(lc_recon[:, 0], y1 = lc_recon[:, 1] - lc_recon[:, 2], y2 = lc_recon[:, 1] + lc_recon[:, 2], zorder=0)
+  ax.set_xlim(lc[0, 0]-0.1*(lc[-1, 0]-lc[0, 0]), lc[-1, 0]+0.1*(lc[-1, 0]-lc[0, 0]))
+  fmax = np.max(lc[:, 1])
+  fmin = np.min(lc[:, 1])
+  ax.set_ylim(fmin - 0.1*(fmax-fmin), fmax + 0.1*(fmax-fmin))
+  ax.set_xlabel('Time')
+  ax.set_ylabel('Flux')
+  
+  ax = fig.add_subplot(122)
+  for i in xrange(sample.shape[0]):
+    psd[i, :] = psd_harmonic(params, freq, sample[i, :])
+  
+  psd_mean = np.mean(np.log10(psd), axis=0)
+  psd_upper, psd_lower = np.percentile(np.log10(psd), [(100.0-68.3)/2.0, 100.0-(100.0-68.3)/2.0], axis=0)
+  psd_best = psd_harmonic(params, freq, np.mean(sample, axis=0))
+  
+  ax.fill_between(freq, y1 = 10.0**psd_upper, y2 = 10.0**psd_lower, alpha=0.5)
+  ax.plot(freq, 10.0**psd_mean, color='b')
+  ax.plot(freq, psd_best, color='r')
+  ax.set_xscale('log')
+  ax.set_yscale('log')
+  ax.set_xlabel('Frequency')
+  ax.set_ylabel('PSD')
+  plt.show()
+
+def psd_carma(params, freq, arg):
+  """
+  psd function for carma process
+  """
+  pstr = params["PSDType"].split(":")
+  carma_p = int(pstr[0])
+  carma_q = int(pstr[1])
+  num_params = carma_p + carma_p + 1 + 1
+  
+  roots = np.zeros(carma_p, dtype=complex)
+  for i in xrange(carma_p//2):
+    a = np.exp(arg[1+i*2])
+    b = np.exp(arg[1+i*2+1])
+    roots[i*2] = -2.0*np.pi*(a + b*1j)
+    roots[i*2+1] = -2.0*np.pi*(a - b*1j)
+  if carma_p%2 == 1:
+    roots[carma_p-1] = -2.0*np.pi* np.exp(arg[1+carma_p -1])
+  
+  coefs = np.poly(roots)
+  ar_coefs=np.zeros(carma_p+1)
+  ar_coefs[:] = coefs[::-1].real
+  
+  ma_coefs = np.zeros(carma_p+1)
+  ma_coefs[0] = 1.0;
+  for i in xrange(1, carma_q+1):
+    ma_coefs[i] = np.exp(arg[1+carma_p + i -1])
+  for i in range(carma_q+1, carma_p+1):
+    ma_coefs[i] = 0.0
+  
+  ar_poly = np.zeros(len(freq), dtype=complex)
+  ma_poly = np.zeros(len(freq), dtype=complex)
+  for k in xrange(carma_p+1):
+    tmp = (2.0*np.pi*freq*1j)**(k)
+    ar_poly += ar_coefs[k] * tmp
+    ma_poly += ma_coefs[k] * tmp
+  
+  psd = np.exp(2.0*arg[0]) * np.abs(ma_poly)**2/np.abs(ar_poly)**2 
+
+  return psd 
+  
+
+def carma_plot(params):
+  """
+  plot results for carma model
+  """
+  pstr = params["PSDType"].split(":")
+  carma_p = int(pstr[0])
+  carma_q = int(pstr[1])
+  num_params = carma_p + carma_p + 1 + 1
+  
+  lc = np.loadtxt(params["FileName"])
+  lc_recon = np.loadtxt("data/recon_mean.txt")
+  sample = np.loadtxt("data/posterior_sample.txt", usecols=(range(num_params)))
+  
+  scale = (np.max(lc[:, 1]) - np.min(lc[:, 1]))/2.0
+  psd_data = np.loadtxt(os.path.dirname(params["FileName"])+"/psd_"+os.path.basename(params["FileName"]))
+  
+  freq = np.logspace(np.log10(1.0/(lc[-1, 0]-lc[0, 0])), np.log10(len(lc[:, 0])/(lc[-1, 0]-lc[0, 0])), 1000)
+  psd = np.zeros((sample.shape[0], 1000))
+  
+  fig = plt.figure(figsize=(15, 4))
+  ax = fig.add_subplot(121)
+  
+  ax.errorbar(lc[:, 0], lc[:, 1], yerr = lc[:, 2], ls='none', marker='o', color='k')
+  ax.plot(lc_recon[:, 0], lc_recon[:, 1])
+  ax.fill_between(lc_recon[:, 0], y1 = lc_recon[:, 1] - lc_recon[:, 2], y2 = lc_recon[:, 1] + lc_recon[:, 2], zorder=0)
+  ax.set_xlim(lc[0, 0]-0.1*(lc[-1, 0]-lc[0, 0]), lc[-1, 0]+0.1*(lc[-1, 0]-lc[0, 0]))
+  fmax = np.max(lc[:, 1])
+  fmin = np.min(lc[:, 1])
+  ax.set_ylim(fmin - 0.1*(fmax-fmin), fmax + 0.1*(fmax-fmin))
+  ax.set_xlabel('Time')
+  ax.set_ylabel('Flux')
+  
+  ax = fig.add_subplot(122)
+  for i in xrange(sample.shape[0]):
+    psd[i, :] = psd_carma(params, freq, sample[i, :])
+  
+  psd_mean = np.mean(np.log10(psd), axis=0)
+  psd_upper, psd_lower = np.percentile(np.log10(psd), [(100.0-68.3)/2.0, 100.0-(100.0-68.3)/2.0], axis=0)
+  psd_best = psd_carma(params, freq, np.mean(sample, axis=0))
+  
+  ax.fill_between(freq, y1 = 10.0**psd_upper*scale, y2 = 10.0**psd_lower*scale, alpha=0.5)
+  ax.plot(freq, 10.0**psd_mean * scale, color='b')
+  #ax.plot(freq, psd_best, color='r')
+  ax.plot(psd_data[:, 0], psd_data[:, 1])
+  ax.set_xscale('log')
+  ax.set_yscale('log')
+  ax.set_xlabel('Frequency')
+  ax.set_ylabel('PSD')
+  plt.show()
+
+def do_plot(params):
+  if params["PSDModel"] == "harmonic":
+    harmonic_plot(params)
+  elif params["PSDModel"] == "carma":
+    carma_plot(params)
+    
+
+if __name__=="__main__":
+  params = read_params()
+  do_plot(params)
+  
+
+

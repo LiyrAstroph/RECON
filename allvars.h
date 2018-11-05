@@ -34,8 +34,11 @@ extern double DT, V, W;
 extern double *time_sim, *flux_sim, *flux_data_sim;
 extern double *flux_sim_mean, *err_sim_mean;
 extern double *freq_array;
+extern int idx_limit;
 extern double norm_psd, norm_prob;
-extern double *workspace, *workspace_psd;
+extern double *workspace_psd;
+extern double **workspace_genlc, **workspace_genlc_perturb;
+extern int *which_parameter_update_prev;
 
 
 extern gsl_interp_accel *gsl_acc_sim;
@@ -47,7 +50,7 @@ extern int num_params, num_params_psd, num_recon;
 extern double **par_range_model, **var_range_model, *par_fix_val;
 extern int *par_fix;
 
-extern int which_level_update, num_particles;
+extern int which_level_update, which_particle_update, which_parameter_update, num_particles;
 
 extern int recon_flag_postprc; 
 extern double recon_temperature;

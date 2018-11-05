@@ -112,6 +112,7 @@ int recon_postproc()
 
     char posterior_sample_file[200];
     int size_of_modeltype = num_params * sizeof(double);
+    double *psd;
 
     get_posterior_sample_file(options_file, posterior_sample_file);
 
@@ -148,6 +149,11 @@ int recon_postproc()
 
     post_model = malloc(size_of_modeltype);
     posterior_sample = malloc(num_ps * size_of_modeltype);
+    
+    which_parameter_update = -1;
+    which_particle_update = 0;
+
+    psd = workspace_genlc[which_particle_update];
 
     for(j=0; j<nd_sim; j++)
     {
@@ -200,7 +206,7 @@ int recon_postproc()
           + parset.slope_endmatch * (time_sim[j] - time_data[0]) );
       }
       fprintf(fcon_all, "\n");
-
+      
     }
 
     for(j=0; j<nd_sim; j++)
@@ -263,7 +269,7 @@ int recon_init()
   if(recon_flag_prior_exam == 0)
   {
     fptrset->log_likelihoods_cal = log_likelihoods_cal_recon;
-    fptrset->log_likelihoods_cal_initial = log_likelihoods_cal_recon;
+    fptrset->log_likelihoods_cal_initial = log_likelihoods_cal_initial_recon;
     fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_recon;
   }
   else
@@ -275,7 +281,8 @@ int recon_init()
 
   set_psd_functions();
 
-  /* open file for output recon configurations */
+  // open file for output recon configurations 
+  // read number of particles
   if(thistask == roottask)
   {
     sprintf(fname, "%s/data/recon_info.txt", parset.file_dir);
@@ -285,8 +292,11 @@ int recon_init()
       printf("Cannot open file %s.\n", fname);
       exit(0);
     }
+
+    get_num_particles(options_file);
   }
-  
+  MPI_Bcast(&num_particles, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+
   num_params_psd = parset.num_params_psd + parset.num_params_psdperiod;
 
   /* fft */
@@ -451,13 +461,32 @@ int recon_init()
   pfft = fftw_plan_dft_c2r_1d(nd_sim, fft_work, flux_sim, FFTW_MEASURE);
 
   freq_array = (double *)malloc(nd_sim/2*sizeof(double));
-  workspace = (double *)malloc(nd_sim * sizeof(double));
   workspace_psd = (double *)malloc( 100 * sizeof(complex) );
   workspace_complex = (complex *)malloc( 100 * sizeof(complex) );
   
+  // initialize frequency grid array
   for(i=0; i<nd_sim/2; i++)
   {
     freq_array[i] = (i+1)*1.0/(nd_sim * DT);
+  }
+  // determine the index for freq_limit in the frequency array
+  if(freq_array[0] >= parset.freq_limit)
+  {
+    idx_limit = 0;
+  }
+  else
+  {
+    idx_limit = (int)((parset.freq_limit - freq_array[0])/(freq_array[1] - freq_array[0])) + 1;
+  }
+
+  which_parameter_update = -1;
+  which_parameter_update_prev = malloc(num_particles * sizeof(int));
+  workspace_genlc = malloc(num_particles * sizeof(double *));
+  workspace_genlc_perturb = malloc(num_particles * sizeof(double *));
+  for(i=0; i<num_particles; i++)
+  {
+    workspace_genlc[i] = malloc(nd_sim * sizeof(double));
+    workspace_genlc_perturb[i] = malloc(nd_sim * sizeof(double));
   }
 
   if(thistask == roottask)
@@ -517,9 +546,18 @@ int recon_end()
     free(flux_data_sim);
   }
   free(freq_array);
-  free(workspace);
   free(workspace_psd);
   free(workspace_complex);
+
+  free(which_parameter_update_prev);
+  for(i=0; i<num_particles; i++)
+  {
+    free(workspace_genlc[i]);
+    free(workspace_genlc_perturb[i]);
+  }
+  free(workspace_genlc);
+  free(workspace_genlc_perturb);
+  
   return 0;
 }
 
@@ -590,8 +628,15 @@ int genlc_array(const void *model)
   double *pm = (double *)model;
 
   arg = pm;
-  psd_sqrt = workspace;
-  psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
+  if(which_parameter_update < num_params_psd)
+  {
+    psd_sqrt = workspace_genlc_perturb[which_particle_update];
+    psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
+  }
+  else
+  {
+    psd_sqrt = workspace_genlc[which_particle_update];
+  }
 
   fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
   fft_work[0][1] = 0.0;
@@ -608,7 +653,10 @@ int genlc_array(const void *model)
   if(parset.psdperiod_enum > none)
   {
     psdperiod_sqrt = psd_sqrt + nd_sim/2;
-    psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
+    if(which_parameter_update < num_params_psd)
+    {
+      psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
+    }
     for(i=1; i<nd_sim/2+1; i++)
     {
       fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
@@ -629,8 +677,21 @@ int genlc_array(const void *model)
 
 double prob_recon(const void *model)
 {
-  double prob;
-  int i;
+  double prob, *ptemp;
+  int i, param;
+
+  which_particle_update = dnest_get_which_particle_update();
+
+  if(dnest_perturb_accept[which_particle_update] == 1)
+  {
+    param = which_parameter_update_prev[which_particle_update];
+    if(param < num_params_psd)
+    {
+      ptemp = workspace_genlc[which_particle_update];
+      workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
+      workspace_genlc_perturb[which_particle_update] = ptemp;
+    }
+  }
 
   genlc_array(model);
   
@@ -647,6 +708,39 @@ double prob_recon(const void *model)
     prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]);
   }
   prob += norm_prob;
+
+  which_parameter_update_prev[which_particle_update] = which_parameter_update;
+  return prob;
+}
+
+double prob_initial_recon(const void *model)
+{
+  double prob, *ptemp;
+  int i, param;
+
+  which_particle_update = dnest_get_which_particle_update();
+  which_parameter_update = -1;
+
+  genlc_array(model);
+  
+  gsl_interp_init(gsl_linear_sim, time_sim, flux_sim, nd_sim);
+  
+  for(i=0; i<ndata; i++)
+  {
+    flux_data_sim[i] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[i], gsl_acc_sim);
+  }
+
+  prob = 0.0;
+  for(i=0; i<ndata; i++)
+  {
+    prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]);
+  }
+  prob += norm_prob;
+  
+  // copy calculated PSD values 
+  ptemp = workspace_genlc[which_particle_update];
+  workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
+  workspace_genlc_perturb[which_particle_update] = ptemp;
   return prob;
 }
 
@@ -742,6 +836,13 @@ double log_likelihoods_cal_recon(const void *model)
   return logL;
 }
 
+double log_likelihoods_cal_initial_recon(const void *model)
+{
+  double logL;
+  logL = prob_initial_recon(model);
+  return logL;
+}
+
 double log_likelihoods_cal_recon_exam(const void *model)
 {
   return 0.0;
@@ -762,6 +863,8 @@ double perturb_recon(void *model)
     else
       which = dnest_rand_int(num_recon) + num_params_psd;
   }while(par_fix[which] == 1);
+
+  which_parameter_update = which;
 
   /* level-dependent width */
   if(recon_flag_limits==0)
@@ -1232,7 +1335,9 @@ void sim()
   {
     pm[i] = gsl_rng_uniform(gsl_r);
   }
-
+  
+  which_parameter_update = -1;
+  which_particle_update = 0;
   genlc_array(model);
 
   // add Gaussian noise

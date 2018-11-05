@@ -600,3 +600,31 @@ void read_sim_arg()
 
   return;
 }
+
+
+/*!
+ * get number of particles from the option file.
+ */
+void get_num_particles(char *fname)
+{
+  FILE *fp;
+  char buf[256], buf1[256];
+  fp = fopen(fname, "r");
+  if(fp == NULL)
+  {
+    fprintf(stderr, "# Error: Cannot open file %s\n", fname);
+    exit(-1);
+  }
+
+  buf[0]='#';
+  while(buf[0]=='#')
+  {
+    fgets(buf, 256, fp);
+    if(sscanf(buf, "%s", buf1) < 1)  // a blank line
+    {
+      buf[0] = '#';
+    }
+  }
+  sscanf(buf, "%d", &num_particles);
+  fclose(fp);
+}

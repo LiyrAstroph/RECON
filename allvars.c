@@ -30,8 +30,11 @@ double DT, V, W;
 double *time_sim, *flux_sim, *flux_data_sim;
 double *flux_sim_mean, *err_sim_mean;
 double *freq_array;
+int idx_limit;
 double norm_psd, norm_prob;
-double *workspace, *workspace_psd;
+double *workspace_psd;
+double **workspace_genlc, **workspace_genlc_perturb;
+int *which_parameter_update_prev;
 
 gsl_interp_accel *gsl_acc_sim;
 gsl_interp  *gsl_linear_sim;
@@ -43,7 +46,7 @@ int num_params, num_params_psd, num_recon;
 double **par_range_model, **var_range_model, *par_fix_val;
 int *par_fix;
 
-int which_level_update, num_particles;
+int which_level_update, which_particle_update, which_parameter_update, num_particles;
 
 int recon_flag_postprc; 
 double recon_temperature;
