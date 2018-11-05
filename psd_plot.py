@@ -100,7 +100,7 @@ def psd_carma(params, freq, arg):
   pstr = params["PSDType"].split(":")
   carma_p = int(pstr[0])
   carma_q = int(pstr[1])
-  num_params = carma_p + carma_p + 1 + 1
+  num_params = carma_p + carma_q + 1 + 1
   
   roots = np.zeros(carma_p, dtype=complex)
   for i in xrange(carma_p//2):
@@ -141,8 +141,9 @@ def carma_plot(params):
   pstr = params["PSDType"].split(":")
   carma_p = int(pstr[0])
   carma_q = int(pstr[1])
-  num_params = carma_p + carma_p + 1 + 1
-  
+  num_params = carma_p + carma_q + 1 + 1
+  print num_params
+
   lc = np.loadtxt(params["FileName"])
   lc_recon = np.loadtxt("data/recon_mean.txt")
   sample = np.loadtxt("data/posterior_sample.txt", usecols=(range(num_params)))
