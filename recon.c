@@ -26,6 +26,13 @@
 // function set for DNest.
 DNestFptrSet *fptrset;
 
+/*
+ *========================================================================
+ * do MCMC smapling
+ *
+ *========================================================================
+ */
+
 double recon()
 {
   int i, argc=0, narg=9;
@@ -100,7 +107,12 @@ double recon()
   return logz;
 }
 
-
+/*
+ *========================================================================
+ * postprocess
+ *
+ *========================================================================
+ */
 int recon_postproc()
 {
   if(thistask == roottask)
@@ -240,6 +252,12 @@ int recon_postproc()
   return 0;
 }
 
+/*
+ *========================================================================
+ * setup recon
+ *
+ *========================================================================
+ */
 int recon_init()
 {
   char fname[200];
@@ -457,7 +475,7 @@ int recon_init()
   gsl_acc_sim = gsl_interp_accel_alloc();
   gsl_linear_sim = gsl_interp_alloc(gsl_interp_linear, nd_sim);
 
-  fft_work = (fftw_complex *)fftw_malloc( nd_sim * sizeof(fftw_complex));
+  fft_work = (fftw_complex *)fftw_malloc( (nd_sim/2+1) * sizeof(fftw_complex));
   pfft = fftw_plan_dft_c2r_1d(nd_sim, fft_work, flux_sim, FFTW_MEASURE);
 
   freq_array = (double *)malloc(nd_sim/2*sizeof(double));
@@ -469,6 +487,12 @@ int recon_init()
   {
     freq_array[i] = (i+1)*1.0/(nd_sim * DT);
   }
+  // initialize fft_work
+  for(i=0; i<nd_sim/2+1; i++)
+  {
+    fft_work[i][0] = fft_work[i][1] = 0.0;
+  }
+
   // determine the index for freq_limit in the frequency array
   if(parset.freq_limit <= freq_array[0] )
   {
@@ -502,7 +526,6 @@ int recon_init()
     }
   }
 
-
   which_parameter_update = -1;
   which_parameter_update_prev = malloc(num_particles * sizeof(int));
   workspace_genlc = malloc(num_particles * sizeof(double *));
@@ -527,7 +550,10 @@ int recon_init()
 }
 
 /*
- * Finalize recon.
+ *========================================================================
+ * finalize recon
+ *
+ *========================================================================
  */
 int recon_end()
 {
@@ -595,9 +621,12 @@ int recon_end()
 }
 
 /*
- * Generate a light curve for a given model.
+ *========================================================================
+ * generate a light curve for a given model.
+ *
+ *========================================================================
  */
-int genlc(const void *model)
+void genlc(const void *model)
 {
   int i;
   double *arg, freq, psd_sqrt;
@@ -651,13 +680,20 @@ int genlc(const void *model)
     flux_sim[i] = flux_sim[i] * norm_psd;
   }
 
-  return 0;
+  return;
 }
 
-int genlc_array(const void *model)
+/*
+ *========================================================================
+ * fast version of genlc.
+ * calculate PSD for a frequecy series at the same calling.
+ *
+ *========================================================================
+ */
+void genlc_array(const void *model)
 {
   int i;
-  double *arg, *freq, *psd_sqrt, *psdperiod_sqrt;
+  double *arg, *psd_sqrt, *psdperiod_sqrt;
   double *pm = (double *)model;
 
   arg = pm;
@@ -672,7 +708,7 @@ int genlc_array(const void *model)
   }
 
   fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
-  fft_work[0][1] = 0.0;
+  //fft_work[0][1] = 0.0;
 
   for(i=0; i<nd_sim/2-1; i++)
   {
@@ -680,7 +716,7 @@ int genlc_array(const void *model)
     fft_work[i+1][1] = pm[num_params_psd+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
   }
   fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1] * psd_sqrt[nd_sim/2-1];
-  fft_work[nd_sim/2][1] = 0.0;
+  //fft_work[nd_sim/2][1] = 0.0;
 
   // add periodic component
   if(parset.psdperiod_enum > none)
@@ -705,12 +741,18 @@ int genlc_array(const void *model)
     flux_sim[i] = flux_sim[i] * norm_psd;
   }
 
-  return 0;
+  return;
 }
 
+/*
+ *========================================================================
+ * likelihood probability
+ *
+ *========================================================================
+ */
 double prob_recon(const void *model)
 {
-  double prob, *ptemp;
+  double prob=0.0, *ptemp;
   int i, param;
 
   which_particle_update = dnest_get_which_particle_update();
@@ -735,7 +777,6 @@ double prob_recon(const void *model)
     flux_data_sim[i] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[i], gsl_acc_sim);
   }
 
-  prob = 0.0;
   for(i=0; i<ndata; i++)
   {
     prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]);
@@ -746,10 +787,16 @@ double prob_recon(const void *model)
   return prob;
 }
 
+/*
+ *========================================================================
+ * likelihood probability at initial step
+ *
+ *========================================================================
+ */
 double prob_initial_recon(const void *model)
 {
-  double prob, *ptemp;
-  int i, param;
+  double prob=0.0, *ptemp;
+  int i;
 
   which_particle_update = dnest_get_which_particle_update();
   which_parameter_update = -1;
@@ -763,7 +810,6 @@ double prob_initial_recon(const void *model)
     flux_data_sim[i] = gsl_interp_eval(gsl_linear_sim, time_sim, flux_sim, time_data[i], gsl_acc_sim);
   }
 
-  prob = 0.0;
   for(i=0; i<ndata; i++)
   {
     prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]);
