@@ -111,7 +111,7 @@ double psd_carma(double fk, double *arg)
 
 void psd_carma_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
 {
-  double sigma;
+  double sigma, noise, tmp_sqrt;
   double *ar_coefs, *ma_coefs;
   complex *ar_roots;
   int i, j; 
@@ -122,6 +122,7 @@ void psd_carma_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
   ma_coefs = ar_coefs + parset.carma_p+1;
   
   sigma = exp(arg[0]);
+  noise = exp(arg[num_params_psd - 1]);
 
   get_ar_roots(arg, ar_roots);
   get_poly_coefs(ar_roots, parset.carma_p, ar_coefs);
@@ -137,7 +138,8 @@ void psd_carma_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
       ar_poly += ar_coefs[i] * tmp;
       ma_poly += ma_coefs[i] * tmp;
     }
-    psd_sqrt[j] = sigma * cabs(ma_poly)/cabs(ar_poly);
+    tmp_sqrt = sigma* cabs(ma_poly)/cabs(ar_poly);
+    psd_sqrt[j] = sqrt( tmp_sqrt*tmp_sqrt + noise );
   }
 
   return;

@@ -470,9 +470,13 @@ int recon_init()
     freq_array[i] = (i+1)*1.0/(nd_sim * DT);
   }
   // determine the index for freq_limit in the frequency array
-  if(freq_array[0] >= parset.freq_limit)
+  if(parset.freq_limit <= freq_array[0] )
   {
     idx_limit = 0;
+  }
+  else if(parset.freq_limit >= freq_array[nd_sim/2 - 1])
+  {
+    idx_limit = nd_sim/2;
   }
   else
   {

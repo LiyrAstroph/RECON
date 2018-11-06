@@ -391,16 +391,32 @@ void psd_bending_power_law_sqrt_array(double *fk, double *arg, double *psd_sqrt,
 {
   double A=exp(arg[0]), alpha_hi=arg[1], alpha_lo=(arg[1] - arg[2]);
   double fc=exp(arg[3]), cnoise=exp(arg[4]);
-  int i;
+  int i, idx_fc;
 
-  for(i=0; i<n; i++)
+  if(fc <= freq_array[0])
   {
-    if(fk[i] > fc)
-      psd_sqrt[i] = sqrt(A * pow(fk[i]/fc, -alpha_hi) + cnoise);
-    else if(fk[i] > parset.freq_limit)
-      psd_sqrt[i] = sqrt(A * pow(fk[i]/fc, -alpha_lo) + cnoise);
-    else
-      psd_sqrt[i] = sqrt(A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise);
+    idx_fc = 0;
+  }
+  else if (fc >= freq_array[n-1])
+  {
+    idx_fc = n;
+  }
+  else
+  {
+    idx_fc = (int)( (fc - freq_array[0])/(freq_array[1] - freq_array[0]) + 1);
+  }
+
+  for(i=0; i<idx_limit; i++)
+  {
+    psd_sqrt[i] = sqrt(A * pow(parset.freq_limit/fc, -alpha_lo) + cnoise);
+  }
+  for(i=idx_limit; i<idx_fc; i++)
+  {
+    psd_sqrt[i] = sqrt(A * pow(fk[i]/fc, -alpha_lo) + cnoise);
+  }
+  for(i=idx_fc; i<n; i++)
+  {
+    psd_sqrt[i] = sqrt(A * pow(fk[i]/fc, -alpha_hi) + cnoise);
   }
   return;
 }

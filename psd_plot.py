@@ -39,7 +39,8 @@ def psd_harmonic(params, freq, arg):
   S1 = np.exp(arg[0])
   omega1_sqr = np.exp(2.0*arg[1])
   psd[:] += S1 * omega1_sqr**2/((freq**2 - omega1_sqr)**2 + 2*omega1_sqr * freq**2)
-    
+  noise = np.exp(arg[2 + (harmonic_term_num-1) * 3])
+
   for j in xrange(harmonic_term_num-1):
     S2 = np.exp(arg[2+j*3])
     omega2_sqr = np.exp(2.0*arg[2+j*3+1])
@@ -48,7 +49,7 @@ def psd_harmonic(params, freq, arg):
     
   psd[:] *= np.sqrt(2.0/np.pi)
    
-  return psd
+  return psd + noise
 
 def harmonic_plot(params):
   """
@@ -59,7 +60,9 @@ def harmonic_plot(params):
   harmonic_term_num = int(params["PSDType"])
   num_params = 2 + 3*(harmonic_term_num - 1) + 1
   sample = np.loadtxt("data/posterior_sample.txt", usecols=(range(num_params)))
-  
+  scale = (np.max(lc[:, 1]) - np.min(lc[:, 1]))/2.0
+  psd_data = np.loadtxt(os.path.dirname(params["FileName"])+"/psd_"+os.path.basename(params["FileName"]))
+
   freq = np.logspace(np.log10(1.0/(lc[-1, 0]-lc[0, 0])), np.log10(len(lc[:, 0])/(lc[-1, 0]-lc[0, 0])), 1000)
   psd = np.zeros((sample.shape[0], 1000))
   
@@ -84,9 +87,9 @@ def harmonic_plot(params):
   psd_upper, psd_lower = np.percentile(np.log10(psd), [(100.0-68.3)/2.0, 100.0-(100.0-68.3)/2.0], axis=0)
   psd_best = psd_harmonic(params, freq, np.mean(sample, axis=0))
   
-  ax.fill_between(freq, y1 = 10.0**psd_upper, y2 = 10.0**psd_lower, alpha=0.5)
-  ax.plot(freq, 10.0**psd_mean, color='b')
-  ax.plot(freq, psd_best, color='r')
+  ax.fill_between(freq, y1 = 10.0**psd_upper*scale**2, y2 = 10.0**psd_lower*scale**2, alpha=0.5)
+  ax.plot(freq, 10.0**psd_mean*scale**2, color='b')
+  ax.plot(psd_data[:, 0], psd_data[:, 1])
   ax.set_xscale('log')
   ax.set_yscale('log')
   ax.set_xlabel('Frequency')
@@ -175,9 +178,98 @@ def carma_plot(params):
   psd_upper, psd_lower = np.percentile(np.log10(psd), [(100.0-68.3)/2.0, 100.0-(100.0-68.3)/2.0], axis=0)
   psd_best = psd_carma(params, freq, np.mean(sample, axis=0))
   
-  ax.fill_between(freq, y1 = 10.0**psd_upper*scale, y2 = 10.0**psd_lower*scale, alpha=0.5)
-  ax.plot(freq, 10.0**psd_mean * scale, color='b')
-  #ax.plot(freq, psd_best, color='r')
+  ax.fill_between(freq, y1 = 10.0**psd_upper*scale**2, y2 = 10.0**psd_lower*scale**2, alpha=0.5)
+  ax.plot(freq, 10.0**psd_mean*scale**2, color='b')
+  ax.plot(psd_data[:, 0], psd_data[:, 1]*scale**2)
+  ax.set_xscale('log')
+  ax.set_yscale('log')
+  ax.set_xlabel('Frequency')
+  ax.set_ylabel('PSD')
+  plt.show()
+
+def psd_simple(params, freq, arg):
+
+  num_params_psd = 0
+  if params["PSDType"] == "0":
+    A = np.exp(arg[0])
+    alpha = arg[1]
+    noise = np.exp(arg[2])
+    psd = A * (freq)**(-alpha) + noise
+    num_params_psd = 3
+  elif params["PSDType"] == "1":
+    A, fknee, noise = np.exp(arg[0:3])
+    psd = A / (1.0 + (freq/fknee)**2 ) + noise
+    num_params_psd = 3
+  else:
+    A = np.exp(arg[0])
+    alpha_hi = arg[1]
+    alpha_lo = arg[1] - arg[2]
+    fc, noise = np.exp(arg[3:5])
+    psd = np.zeros(len(freq))
+    idx = (freq >= fc)
+    psd[idx] = A * (freq[idx]/fc)**(-alpha_hi) + noise
+    idx = (freq < fc)
+    psd[idx] = A * (freq[idx]/fc)**(-alpha_lo) + noise
+    num_params_psd = 5
+
+  if params["PSDPeriodModel"] == "gaussian":
+    Ap, center, sig = np.exp(arg[num_params_psd:num_params_psd+3])
+    psd += Ap/np.sqrt(2.0*np.pi)/sig * np.exp(-0.5*(freq - center)**2/sig**2)
+  elif params["PSDPeriodModel"] == "lorentz":
+    Ap, center, sig = np.exp(arg[num_params_psd:num_params_psd+3])
+    psd += Ap/np.pi * sig/(sig*sig + (freq - center)**2)
+
+  return psd
+
+def simple_plot(params):
+  lc = np.loadtxt(params["FileName"])
+  lc_recon = np.loadtxt("data/recon_mean.txt")
+  psdtype = int(params["PSDType"])
+  if params["PSDType"] == "0":
+    num_params = 3
+  elif params["PSDType"] == "1":
+    num_params = 3
+  else:
+    num_params = 5
+
+  if params["PSDPeriodModel"] == "gaussian":
+    num_params += 3
+  elif params["PSDPeriodModel"] == "lorentz":
+    num_params += 3
+  else:
+    num_params += 0
+
+  sample = np.loadtxt("data/posterior_sample.txt", usecols=(range(num_params)))
+
+  scale = (np.max(lc[:, 1]) - np.min(lc[:, 1]))/2.0
+  psd_data = np.loadtxt(os.path.dirname(params["FileName"])+"/psd_"+os.path.basename(params["FileName"]))
+
+  freq = np.logspace(np.log10(1.0/(lc[-1, 0]-lc[0, 0])), np.log10(len(lc[:, 0])/(lc[-1, 0]-lc[0, 0])), 1000)
+  psd = np.zeros((sample.shape[0], 1000))
+  
+  fig = plt.figure(figsize=(15, 4))
+  ax = fig.add_subplot(121)
+  
+  ax.errorbar(lc[:, 0], lc[:, 1], yerr = lc[:, 2], ls='none', marker='o', color='k')
+  ax.plot(lc_recon[:, 0], lc_recon[:, 1])
+  ax.fill_between(lc_recon[:, 0], y1 = lc_recon[:, 1] - lc_recon[:, 2], y2 = lc_recon[:, 1] + lc_recon[:, 2], zorder=0)
+  ax.set_xlim(lc[0, 0]-0.1*(lc[-1, 0]-lc[0, 0]), lc[-1, 0]+0.1*(lc[-1, 0]-lc[0, 0]))
+  fmax = np.max(lc[:, 1])
+  fmin = np.min(lc[:, 1])
+  ax.set_ylim(fmin - 0.1*(fmax-fmin), fmax + 0.1*(fmax-fmin))
+  ax.set_xlabel('Time')
+  ax.set_ylabel('Flux')
+  
+  ax = fig.add_subplot(122)
+  for i in xrange(sample.shape[0]):
+    psd[i, :] = psd_simple(params, freq, sample[i, :])
+  
+  psd_mean = np.mean(np.log10(psd), axis=0)
+  psd_upper, psd_lower = np.percentile(np.log10(psd), [(100.0-68.3)/2.0, 100.0-(100.0-68.3)/2.0], axis=0)
+  psd_best = psd_harmonic(params, freq, np.mean(sample, axis=0))
+  
+  ax.fill_between(freq, y1 = 10.0**psd_upper*scale**2, y2 = 10.0**psd_lower*scale**2, alpha=0.5)
+  ax.plot(freq, 10.0**psd_mean*scale**2, color='b')
   ax.plot(psd_data[:, 0], psd_data[:, 1])
   ax.set_xscale('log')
   ax.set_yscale('log')
@@ -190,6 +282,8 @@ def do_plot(params):
     harmonic_plot(params)
   elif params["PSDModel"] == "carma":
     carma_plot(params)
+  elif params["PSDModel"] == "simple":
+    simple_plot(params)
     
 
 if __name__=="__main__":

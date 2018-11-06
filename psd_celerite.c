@@ -69,7 +69,7 @@ void psd_harmonic_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
 
   S1 = exp(arg[0]);
   omega1_sqr = exp(2.0 * arg[1]);
-  noise = exp(arg[2 + (parset.harmonic_term_num-1) * 3]);
+  noise = exp(arg[num_params_psd - 1]);
 
   for(i=0; i<parset.harmonic_term_num-1; i++)
   {
