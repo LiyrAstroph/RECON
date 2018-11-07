@@ -38,7 +38,7 @@ double psd_harmonic_sqrt(double fk, double *arg)
     psd += S2*omega2_sqr*omega2_sqr/ ( (fk_sqr - omega2_sqr)*(fk_sqr - omega2_sqr) +   omega2_sqr*fk_sqr/Q_sqr );
   }
   
-  noise = exp(arg[2 + (parset.harmonic_term_num-1) * 3]);
+  noise = exp(arg[num_params_psd - 1]);
 
   return sqrt(sqrt(2.0/PI) * psd + noise);
 }

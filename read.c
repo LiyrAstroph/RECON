@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <math.h>
 #include <float.h>
 
@@ -28,7 +29,7 @@ void read_parset()
     #define INT 3
 
     FILE *fparam;
-    int i, j, nt;
+    int i, j, k, nt;
     char str[256], buf1[256], buf2[256], buf3[256];
     int id[MAXTAGS];
     void *addr[MAXTAGS];
@@ -158,6 +159,11 @@ void read_parset()
             *((double *) addr[j]) = atof(buf2);
             break;
           case STRING:
+            // convert to lower case
+            for(k=0; k<strlen(buf2); k++)
+            {
+              buf2[k] = tolower(buf2[k]);
+            }
             strcpy(addr[j], buf2);
             break;
           case INT:

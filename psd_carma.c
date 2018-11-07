@@ -72,7 +72,7 @@ void get_poly_coefs(complex *roots, int n, double *coefs)
 
 double psd_carma_sqrt(double fk, double *arg)
 {
-  double sigma, psd_sqrt;
+  double sigma, psd_sqrt, noise;
   double *ar_coefs, *ma_coefs;
   complex *ar_roots;
   int i; 
@@ -83,6 +83,7 @@ double psd_carma_sqrt(double fk, double *arg)
   ma_coefs = ar_coefs + parset.carma_p+1;
   
   sigma = exp(arg[0]);
+  noise = exp(arg[num_params_psd - 1]);
 
   get_ar_roots(arg, ar_roots);
   get_poly_coefs(ar_roots, parset.carma_p, ar_coefs);
@@ -98,6 +99,7 @@ double psd_carma_sqrt(double fk, double *arg)
   }
 
   psd_sqrt = sigma * cabs(ma_poly)/cabs(ar_poly);
+  psd_sqrt = sqrt(psd_sqrt*psd_sqrt + noise);
   return psd_sqrt;
 }
 
