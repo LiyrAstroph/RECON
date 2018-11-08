@@ -35,6 +35,7 @@ int idx_limit;
 double norm_psd, norm_prob;
 double *workspace_psd;
 double **workspace_genlc, **workspace_genlc_perturb;
+double **workspace_genlc_period, **workspace_genlc_period_perturb;
 int *which_parameter_update_prev;
 
 gsl_interp_accel *gsl_acc_sim;

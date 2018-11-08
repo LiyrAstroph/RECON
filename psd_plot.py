@@ -24,7 +24,7 @@ def read_params():
     sp = line.split()
     for tag in tags:
       if tag == sp[0]:
-        params[tag] = sp[1]
+        params[tag] = sp[1].lower()
     
   fp.close()
   

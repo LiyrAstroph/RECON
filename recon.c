@@ -187,7 +187,7 @@ int recon_postproc()
 
       memcpy(posterior_sample+i*size_of_modeltype, post_model, size_of_modeltype);
       
-      genlc_array(post_model);
+      genlc_array_initial(post_model);
 
       gsl_interp_init(gsl_linear_sim, time_sim, flux_sim, nd_sim);
   
@@ -530,10 +530,15 @@ int recon_init()
   which_parameter_update_prev = malloc(num_particles * sizeof(int));
   workspace_genlc = malloc(num_particles * sizeof(double *));
   workspace_genlc_perturb = malloc(num_particles * sizeof(double *));
+  workspace_genlc_period = malloc(num_particles * sizeof(double *));
+  workspace_genlc_period_perturb = malloc(num_particles * sizeof(double *));
   for(i=0; i<num_particles; i++)
   {
-    workspace_genlc[i] = malloc(nd_sim * sizeof(double));
-    workspace_genlc_perturb[i] = malloc(nd_sim * sizeof(double));
+    workspace_genlc[i] = malloc(nd_sim/2 * sizeof(double));
+    workspace_genlc_perturb[i] = malloc(nd_sim/2 * sizeof(double));
+
+    workspace_genlc_period[i] = malloc(nd_sim/2 * sizeof(double));
+    workspace_genlc_period_perturb[i] = malloc(nd_sim/2 * sizeof(double));
   }
 
   if(thistask == roottask)
@@ -613,9 +618,13 @@ int recon_end()
   {
     free(workspace_genlc[i]);
     free(workspace_genlc_perturb[i]);
+    free(workspace_genlc_period[i]);
+    free(workspace_genlc_period_perturb[i]);
   }
   free(workspace_genlc);
   free(workspace_genlc_perturb);
+  free(workspace_genlc_period);
+  free(workspace_genlc_period_perturb);
   
   return 0;
 }
@@ -721,11 +730,68 @@ void genlc_array(const void *model)
   // add periodic component
   if(parset.psdperiod_enum > none)
   {
-    psdperiod_sqrt = psd_sqrt + nd_sim/2;
-    if(which_parameter_update < num_params_psd)
+    if(which_parameter_update < num_params_psd && which_parameter_update >= parset.num_params_psd)
     {
+      psdperiod_sqrt = workspace_genlc_period_perturb[which_particle_update];
       psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
     }
+    else
+    {
+      psdperiod_sqrt = workspace_genlc_period[which_particle_update];
+    }
+
+    for(i=1; i<nd_sim/2+1; i++)
+    {
+      fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+    }
+  }
+  
+  fftw_execute(pfft);
+
+  // normalization
+  for(i=0; i<nd_sim; i++)
+  {
+    flux_sim[i] = flux_sim[i] * norm_psd;
+  }
+
+  return;
+}
+
+/*
+ *========================================================================
+ * fast version of genlc.
+ * generate lc at the initial step.
+ *
+ *========================================================================
+ */
+void genlc_array_initial(const void *model)
+{
+  int i;
+  double *arg, *psd_sqrt, *psdperiod_sqrt;
+  double *pm = (double *)model;
+
+  arg = pm;
+  psd_sqrt = workspace_genlc[which_particle_update];
+  psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
+  
+  fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
+  //fft_work[0][1] = 0.0;
+
+  for(i=0; i<nd_sim/2-1; i++)
+  {
+    fft_work[i+1][0] = pm[num_params_psd+1+2*i] * psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
+  }
+  fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1] * psd_sqrt[nd_sim/2-1];
+  //fft_work[nd_sim/2][1] = 0.0;
+
+  // add periodic component
+  if(parset.psdperiod_enum > none)
+  {
+    psdperiod_sqrt = workspace_genlc_period[which_particle_update];
+    psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
+    
     for(i=1; i<nd_sim/2+1; i++)
     {
       fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
@@ -760,11 +826,17 @@ double prob_recon(const void *model)
   if(dnest_perturb_accept[which_particle_update] == 1)
   {
     param = which_parameter_update_prev[which_particle_update];
-    if(param < num_params_psd)
+    if(param < parset.num_params_psd)
     {
       ptemp = workspace_genlc[which_particle_update];
       workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
       workspace_genlc_perturb[which_particle_update] = ptemp;
+    }
+    else if(param < num_params_psd)
+    {
+      ptemp = workspace_genlc_period[which_particle_update];
+      workspace_genlc_period[which_particle_update] = workspace_genlc_period_perturb[which_particle_update];
+      workspace_genlc_period_perturb[which_particle_update] = ptemp;
     }
   }
 
@@ -795,13 +867,13 @@ double prob_recon(const void *model)
  */
 double prob_initial_recon(const void *model)
 {
-  double prob=0.0, *ptemp;
+  double prob=0.0;
   int i;
 
   which_particle_update = dnest_get_which_particle_update();
   which_parameter_update = -1;
 
-  genlc_array(model);
+  genlc_array_initial(model);
   
   gsl_interp_init(gsl_linear_sim, time_sim, flux_sim, nd_sim);
   
@@ -816,10 +888,6 @@ double prob_initial_recon(const void *model)
   }
   prob += norm_prob;
   
-  // copy calculated PSD values 
-  ptemp = workspace_genlc[which_particle_update];
-  workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
-  workspace_genlc_perturb[which_particle_update] = ptemp;
   return prob;
 }
 
@@ -1417,7 +1485,7 @@ void sim()
   
   which_parameter_update = -1;
   which_particle_update = 0;
-  genlc_array(model);
+  genlc_array_initial(model);
 
   // add Gaussian noise
   for(i=0; i<nd_sim; i++)
@@ -1516,7 +1584,7 @@ void test()
     pm[num_params_psd + i] = gsl_ran_ugaussian(gsl_r);
   }
 
-  genlc_array(model);
+  genlc_array_initial(model);
   
   for(i=0; i<nd_sim; i++)
   {

@@ -39,6 +39,7 @@ extern int idx_limit;
 extern double norm_psd, norm_prob;
 extern double *workspace_psd;
 extern double **workspace_genlc, **workspace_genlc_perturb;
+extern double **workspace_genlc_period, **workspace_genlc_period_perturb;
 extern int *which_parameter_update_prev;
 
 
