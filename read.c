@@ -509,7 +509,7 @@ void read_sim_arg()
         break;
     }
     
-    if(parset.psdperiod_enum > none)
+    if(parset.psdperiod_enum > delta)
     {      
       i = parset.num_params_psd+0;
       if(parset.psd_arg[i] < 0.0)
@@ -548,6 +548,40 @@ void read_sim_arg()
       {
         if(thistask == roottask)
         {
+          printf("# Incorrect 6th PSDArg.\n");
+          exit(0);
+        }
+      }
+      else
+      {
+        parset.psd_arg[i] = log(parset.psd_arg[i]);
+      }
+    }
+    else if(parset.psdperiod_enum > none)
+    {
+      i = parset.num_params_psd+0;
+      if(parset.psd_arg[i] < 0.0)
+      {
+        if(thistask == roottask)
+        {
+          printf("# Incorrect 4th PSDArg.\n");
+          exit(0);
+        }
+      }
+      else if(parset.psd_arg[i] == 0.0)
+      {
+        parset.psd_arg[i] = -DBL_MAX;
+      }
+      else
+      {
+        parset.psd_arg[i] = log(parset.psd_arg[i]);
+      }
+       
+      i = parset.num_params_psd+1;   
+      if(parset.psd_arg[i] <= 0.0)
+      {
+        if(thistask == roottask)
+        {
           printf("# Incorrect 5th PSDArg.\n");
           exit(0);
         }
@@ -555,6 +589,16 @@ void read_sim_arg()
       else
       {
         parset.psd_arg[i] = log(parset.psd_arg[i]);
+      }
+   
+      i = parset.num_params_psd+2;
+      if(parset.psd_arg[i] < 0.0 || parset.psd_arg[i] > 1.0)
+      {
+        if(thistask == roottask)
+        {
+          printf("# Incorrect 6th PSDArg.\n");
+          exit(0);
+        }
       }
     }
   }
