@@ -360,7 +360,7 @@ void read_sim_arg()
   str = parset.str_psd_arg;
 
   //read parameter values
-  for(i=0; i<num_params_psd; i++)
+  for(i=0; i<num_params_psd_tot; i++)
   {
     if(sscanf(str, "%lf", &parset.psd_arg[i]) < 1)
     {
@@ -374,7 +374,7 @@ void read_sim_arg()
     if(thistask == roottask)
       printf("%d: %f\n", i, parset.psd_arg[i]);
     
-    if(i >= num_params_psd-1)
+    if(i >= num_params_psd_tot-1)
       break;
 
     pstr = strchr(str, ':');

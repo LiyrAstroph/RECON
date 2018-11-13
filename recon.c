@@ -315,7 +315,7 @@ int recon_init()
   }
   MPI_Bcast(&num_particles, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
-  num_params_psd = parset.num_params_psd + parset.num_params_psdperiod;
+  num_params_psd_tot = parset.num_params_psd + parset.num_params_psdperiod;
 
   /* fft */
   if(recon_flag_sim==1)
@@ -437,10 +437,10 @@ int recon_init()
   if(parset.psdperiod_enum > none)
     num_recon += nd_sim/2;
 
-  num_params = num_recon + num_params_psd;
+  num_params = num_recon + num_params_psd_tot;
 
-  var_range_model = malloc((num_params_psd+2)*sizeof(double *));
-  for(i=0; i<num_params_psd+2; i++)
+  var_range_model = malloc((num_params_psd_tot+2)*sizeof(double *));
+  for(i=0; i<num_params_psd_tot+2; i++)
   {
     var_range_model[i] = malloc(2*sizeof(double));
   }
@@ -573,7 +573,7 @@ int recon_end()
 
   fftw_free(fft_work);
   
-  for(i=0; i<num_params_psd+2; i++)
+  for(i=0; i<num_params_psd_tot+2; i++)
   {
     free(var_range_model[i]);
   }
@@ -643,19 +643,19 @@ void genlc(const void *model)
 
   arg = pm;
 
-  fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
+  fft_work[0][0] = pm[num_params_psd_tot+0]; //zero-frequency power.
   fft_work[0][1] = 0.0;
 
   for(i=0; i<nd_sim/2-1; i++)
   {
     freq = (i+1)*1.0/(nd_sim * DT);
     psd_sqrt = psdfunc_sqrt(freq, arg)/sqrt(2.0);
-    fft_work[i+1][0] = pm[num_params_psd+1+2*i] * psd_sqrt;
-    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1] * psd_sqrt;
+    fft_work[i+1][0] = pm[num_params_psd_tot+1+2*i] * psd_sqrt;
+    fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] * psd_sqrt;
   }
   freq = nd_sim/2*1.0/(nd_sim * DT);
   psd_sqrt = psdfunc_sqrt(freq, arg);
-  fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1] * psd_sqrt;
+  fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt;
   fft_work[nd_sim/2][1] = 0.0;
   
   /*for(i=1; i<nd_sim/2; i++)
@@ -675,13 +675,13 @@ void genlc(const void *model)
     for(i=1; i<nd_sim/2; i++)
     {
       freq = i*1.0/(nd_sim * DT);
-      psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
-      fft_work[i][0] += psd_sqrt * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += psd_sqrt * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd_tot-3); // the last 3 vars
+      fft_work[i][0] += psd_sqrt * cos(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psd_sqrt * sin(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
     }
     i = nd_sim/2;
     freq = i*1.0/(nd_sim * DT);
-    psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
+    psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd_tot-3); // the last 3 vars
     fft_work[i][0] += psd_sqrt;
   }
   
@@ -710,7 +710,7 @@ void genlc_array(const void *model)
   double *pm = (double *)model;
 
   arg = pm;
-  if(which_parameter_update < num_params_psd)
+  if(which_parameter_update < num_params_psd_tot)
   {
     psd_sqrt = workspace_genlc_perturb[which_particle_update];
     psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
@@ -720,24 +720,24 @@ void genlc_array(const void *model)
     psd_sqrt = workspace_genlc[which_particle_update];
   }
 
-  fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
+  fft_work[0][0] = pm[num_params_psd_tot+0]; //zero-frequency power.
   //fft_work[0][1] = 0.0;
 
   for(i=0; i<nd_sim/2-1; i++)
   {
-    fft_work[i+1][0] = pm[num_params_psd+1+2*i] * psd_sqrt[i]/sqrt(2.0);
-    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][0] = pm[num_params_psd_tot+1+2*i] * psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
   }
-  fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1] * psd_sqrt[nd_sim/2-1];
+  fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt[nd_sim/2-1];
   //fft_work[nd_sim/2][1] = 0.0;
 
   // add periodic component
   if(parset.psdperiod_enum > none)
   {
-    if(which_parameter_update < num_params_psd && which_parameter_update >= parset.num_params_psd)
+    if(which_parameter_update < num_params_psd_tot && which_parameter_update >= parset.num_params_psd)
     {
       psdperiod_sqrt = workspace_genlc_period_perturb[which_particle_update];
-      psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
+      psdfunc_period_sqrt_array(freq_array, arg+num_params_psd_tot-3, psdperiod_sqrt, nd_sim/2);
     }
     else
     {
@@ -746,8 +746,8 @@ void genlc_array(const void *model)
 
     for(i=1; i<nd_sim/2; i++)
     {
-      fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
     }
     fft_work[nd_sim/2][0] += psdperiod_sqrt[nd_sim/2-1] ;
   }
@@ -780,27 +780,27 @@ void genlc_array_initial(const void *model)
   psd_sqrt = workspace_genlc[which_particle_update];
   psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
   
-  fft_work[0][0] = pm[num_params_psd+0]; //zero-frequency power.
+  fft_work[0][0] = pm[num_params_psd_tot+0]; //zero-frequency power.
   //fft_work[0][1] = 0.0;
 
   for(i=0; i<nd_sim/2-1; i++)
   {
-    fft_work[i+1][0] = pm[num_params_psd+1+2*i] * psd_sqrt[i]/sqrt(2.0);
-    fft_work[i+1][1] = pm[num_params_psd+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][0] = pm[num_params_psd_tot+1+2*i] * psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
   }
-  fft_work[nd_sim/2][0] = pm[num_params_psd + nd_sim-1] * psd_sqrt[nd_sim/2-1];
+  fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt[nd_sim/2-1];
   //fft_work[nd_sim/2][1] = 0.0;
 
   // add periodic component
   if(parset.psdperiod_enum > none)
   {
     psdperiod_sqrt = workspace_genlc_period[which_particle_update];
-    psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
+    psdfunc_period_sqrt_array(freq_array, arg+num_params_psd_tot-3, psdperiod_sqrt, nd_sim/2);
     
     for(i=1; i<nd_sim/2; i++)
     {
-      fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
+      fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
     }
     fft_work[nd_sim/2][0] += psdperiod_sqrt[nd_sim/2-1] ;
   }
@@ -838,7 +838,7 @@ double prob_recon(const void *model)
       workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
       workspace_genlc_perturb[which_particle_update] = ptemp;
     }
-    else if(param < num_params_psd)
+    else if(param < num_params_psd_tot)
     {
       ptemp = workspace_genlc_period[which_particle_update];
       workspace_genlc_period[which_particle_update] = workspace_genlc_period_perturb[which_particle_update];
@@ -902,15 +902,15 @@ void from_prior_recon(void *model)
   int i;
   double *pm = (double *)model;
 
-  for(i=0; i<num_params_psd+1; i++)
+  for(i=0; i<num_params_psd_tot+1; i++)
   {
     pm[i] = par_range_model[i][0] + dnest_rand()*(par_range_model[i][1] - par_range_model[i][0]);
   }
 
   for(i=1; i<nd_sim; i++)
-    pm[i+num_params_psd] = dnest_randn();
+    pm[i+num_params_psd_tot] = dnest_randn();
 
-  for(i=num_params_psd+nd_sim; i<num_params; i++)
+  for(i=num_params_psd_tot+nd_sim; i<num_params; i++)
     pm[i] = dnest_rand();
 
   for(i=0; i<num_params; i++)
@@ -938,7 +938,7 @@ void print_particle_recon_saveoutput(FILE *fp, const void *model)
   int i;
   double *pm = (double *)model;
 
-  for(i=0; i<num_params_psd; i++)
+  for(i=0; i<num_params_psd_tot; i++)
   {
     fprintf(fp, "%e ", pm[i] );
   }
@@ -969,7 +969,7 @@ void read_particle_recon_saveoutput(FILE *fp, void *model)
   int j;
   double *psample = (double *)model;
 
-  for(j=0; j < num_params_psd; j++)
+  for(j=0; j < num_params_psd_tot; j++)
   {
     if(fscanf(fp, "%lf", psample+j) < 1)
     {
@@ -1012,9 +1012,9 @@ double perturb_recon(void *model)
   {
     rnd = dnest_rand();
     if(rnd < 0.2)
-      which = dnest_rand_int(num_params_psd);
+      which = dnest_rand_int(num_params_psd_tot);
     else
-      which = dnest_rand_int(num_recon) + num_params_psd;
+      which = dnest_rand_int(num_recon) + num_params_psd_tot;
   }while(par_fix[which] == 1);
 
   which_parameter_update = which;
@@ -1043,12 +1043,12 @@ double perturb_recon(void *model)
   
   //width = ( par_range_model[which][1] - par_range_model[which][0] );
   
-  if(which < num_params_psd + 1)
+  if(which < num_params_psd_tot + 1)
   {
     pm[which] += dnest_randh() * width;
     dnest_wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
   }
-  else if(which < num_params_psd + nd_sim)
+  else if(which < num_params_psd_tot + nd_sim)
   {
     logH -= (-0.5*pow(pm[which], 2.0) );
     pm[which] += dnest_randh() * width;
@@ -1170,13 +1170,13 @@ void set_par_fix()
   {
     if(parset.psdperiod_enum == none) // no periodic component
     {
-      par_fix[num_params_psd-1] = 1;
-      par_fix_val[num_params_psd-1] = -DBL_MAX;
+      par_fix[num_params_psd_tot-1] = 1;
+      par_fix_val[num_params_psd_tot-1] = -DBL_MAX;
     }
     else // periodic component included
     {
-      par_fix[num_params_psd-3 - 1] = 1;
-      par_fix_val[num_params_psd-3 - 1] = -DBL_MAX;
+      par_fix[num_params_psd_tot-3 - 1] = 1;
+      par_fix_val[num_params_psd_tot-3 - 1] = -DBL_MAX;
     }
     
     if(thistask == roottask)
@@ -1312,20 +1312,20 @@ void set_par_range()
   var_range_model[i++][1] = 10.0;
 
   // variability parameters
-  for(i=0; i<num_params_psd+1; i++)
+  for(i=0; i<num_params_psd_tot+1; i++)
   {
     par_range_model[i][0] = var_range_model[i][0];
     par_range_model[i][1] = var_range_model[i][1];
   }
 
   // continuum light curve parameters
-  for(i=num_params_psd+1; i<num_params_psd+nd_sim; i++)
+  for(i=num_params_psd_tot+1; i<num_params_psd_tot+nd_sim; i++)
   {
-    par_range_model[i][0] = var_range_model[num_params_psd+1][0];
-    par_range_model[i][1] = var_range_model[num_params_psd+1][1];
+    par_range_model[i][0] = var_range_model[num_params_psd_tot+1][0];
+    par_range_model[i][1] = var_range_model[num_params_psd_tot+1][1];
   }
 
-  for(i=num_params_psd+nd_sim; i< num_params; i++)
+  for(i=num_params_psd_tot+nd_sim; i< num_params; i++)
   {
     par_range_model[i][0] = 0.0;
     par_range_model[i][1] = 1.0;
@@ -1475,16 +1475,16 @@ void sim()
   
   pm = (double *)model;
 
-  memcpy(pm, parset.psd_arg, num_params_psd * sizeof(double));
+  memcpy(pm, parset.psd_arg, num_params_psd_tot * sizeof(double));
 
-  pm[num_params_psd] = 0.0;
+  pm[num_params_psd_tot] = 0.0;
   
   for(i=1; i<nd_sim; i++)
   {
-    pm[num_params_psd + i] = gsl_ran_ugaussian(gsl_r);
+    pm[num_params_psd_tot + i] = gsl_ran_ugaussian(gsl_r);
   }
 
-  for(i=num_params_psd+nd_sim; i<num_params; i++)
+  for(i=num_params_psd_tot+nd_sim; i<num_params; i++)
   {
     pm[i] = gsl_rng_uniform(gsl_r);
   }
@@ -1587,7 +1587,7 @@ void test()
   
   for(i=1; i<num_recon; i++)
   {
-    pm[num_params_psd + i] = gsl_ran_ugaussian(gsl_r);
+    pm[num_params_psd_tot + i] = gsl_ran_ugaussian(gsl_r);
   }
 
   genlc_array_initial(model);
