@@ -710,7 +710,7 @@ void genlc_array(const void *model)
   double *pm = (double *)model;
 
   arg = pm;
-  if(which_parameter_update < num_params_psd_tot)
+  if(which_parameter_update < parset.num_params_psd)
   {
     psd_sqrt = workspace_genlc_perturb[which_particle_update];
     psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
@@ -862,6 +862,7 @@ double prob_recon(const void *model)
   prob += norm_prob;
 
   which_parameter_update_prev[which_particle_update] = which_parameter_update;
+
   return prob;
 }
 
