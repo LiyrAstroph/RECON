@@ -103,7 +103,7 @@ extern PARSET parset;
 extern FILE *finfo;
 
 enum PSDMODEL {simple, harmonic, carma, celerite};
-enum PSDPERIODMODEL {none, gaussian, lorentz};
+enum PSDPERIODMODEL {none, delta, gaussian, lorentz};
 
 // for harmonic
 

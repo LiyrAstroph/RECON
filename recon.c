@@ -530,15 +530,21 @@ int recon_init()
   which_parameter_update_prev = malloc(num_particles * sizeof(int));
   workspace_genlc = malloc(num_particles * sizeof(double *));
   workspace_genlc_perturb = malloc(num_particles * sizeof(double *));
-  workspace_genlc_period = malloc(num_particles * sizeof(double *));
-  workspace_genlc_period_perturb = malloc(num_particles * sizeof(double *));
   for(i=0; i<num_particles; i++)
   {
     workspace_genlc[i] = malloc(nd_sim/2 * sizeof(double));
     workspace_genlc_perturb[i] = malloc(nd_sim/2 * sizeof(double));
+  }
 
-    workspace_genlc_period[i] = malloc(nd_sim/2 * sizeof(double));
-    workspace_genlc_period_perturb[i] = malloc(nd_sim/2 * sizeof(double));
+  if(parset.psdperiod_enum > delta)
+  {
+    workspace_genlc_period = malloc(num_particles * sizeof(double *));
+    workspace_genlc_period_perturb = malloc(num_particles * sizeof(double *));
+    for(i=0; i<num_particles; i++)
+    {
+      workspace_genlc_period[i] = malloc(nd_sim/2 * sizeof(double));
+      workspace_genlc_period_perturb[i] = malloc(nd_sim/2 * sizeof(double));
+    }
   }
 
   if(thistask == roottask)
@@ -618,13 +624,20 @@ int recon_end()
   {
     free(workspace_genlc[i]);
     free(workspace_genlc_perturb[i]);
-    free(workspace_genlc_period[i]);
-    free(workspace_genlc_period_perturb[i]);
   }
   free(workspace_genlc);
   free(workspace_genlc_perturb);
-  free(workspace_genlc_period);
-  free(workspace_genlc_period_perturb);
+
+  if(parset.psdperiod_enum > delta)
+  {
+    for(i=0; i<num_particles; i++)
+    {
+      free(workspace_genlc_period[i]);
+      free(workspace_genlc_period_perturb[i]);
+    }
+    free(workspace_genlc_period);
+    free(workspace_genlc_period_perturb);
+  }
   
   return 0;
 }
