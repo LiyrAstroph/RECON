@@ -48,7 +48,7 @@ extern gsl_interp  *gsl_linear_sim;
 extern fftw_plan pfft;
 extern fftw_complex *fft_work;
 
-extern int num_params, num_params_psd_tot, num_recon;
+extern int num_params, num_params_psd_tot, num_recon, num_params_psd_prob;
 extern double **par_range_model, **var_range_model, *par_fix_val;
 extern int *par_fix;
 
@@ -103,7 +103,7 @@ extern PARSET parset;
 extern FILE *finfo;
 
 enum PSDMODEL {simple, harmonic, carma, celerite};
-enum PSDPERIODMODEL {none, delta, gaussian, lorentz};
+enum PSDPERIODMODEL {none, delta, gaussian, lorentzian};
 
 // for harmonic
 

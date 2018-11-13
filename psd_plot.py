@@ -211,11 +211,17 @@ def psd_simple(params, freq, arg):
     idx = (freq < fc)
     psd[idx] = A * (freq[idx]/fc)**(-alpha_lo) + noise
     num_params_psd = 5
-
-  if params["PSDPeriodModel"] == "gaussian":
+  
+  if params["PSDPeriodModel"] == "delta":
+    Ap = np.exp(arg[num_params_psd])
+    nu0 = np.exp(arg[num_params_psd+1])
+    phi = np.exp(arg[num_params_psd+2])
+    i0 = int( (np.log10(nu0) - np.log10(freq[0]))/(np.log10(freq[1]) - np.log10(freq[0])))
+    psd[i0] += Ap
+  elif params["PSDPeriodModel"] == "gaussian":
     Ap, center, sig = np.exp(arg[num_params_psd:num_params_psd+3])
     psd += Ap/np.sqrt(2.0*np.pi)/sig * np.exp(-0.5*(freq - center)**2/sig**2)
-  elif params["PSDPeriodModel"] == "lorentz":
+  elif params["PSDPeriodModel"] == "lorentzian":
     Ap, center, sig = np.exp(arg[num_params_psd:num_params_psd+3])
     psd += Ap/np.pi * sig/(sig*sig + (freq - center)**2)
 
@@ -232,9 +238,11 @@ def simple_plot(params):
   else:
     num_params = 5
 
-  if params["PSDPeriodModel"] == "gaussian":
+  if params["PSDPeriodModel"] == "delta":
     num_params += 3
-  elif params["PSDPeriodModel"] == "lorentz":
+  elif params["PSDPeriodModel"] == "gaussian":
+    num_params += 3
+  elif params["PSDPeriodModel"] == "lorentzian":
     num_params += 3
   else:
     num_params += 0

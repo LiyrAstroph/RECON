@@ -264,17 +264,21 @@ void read_parset()
     {
       parset.psdperiod_enum = none;
     }
+    else if(strcmp(parset.psdperiod_model, "delta") ==0 )
+    {
+      parset.psdperiod_enum = delta;
+    }
     else if(strcmp(parset.psdperiod_model, "gaussian") == 0)
     {
       parset.psdperiod_enum = gaussian;
     }
-    else if(strcmp(parset.psdperiod_model, "lorentz") == 0)
+    else if(strcmp(parset.psdperiod_model, "lorentzian") == 0)
     {
-      parset.psdperiod_enum = lorentz;
+      parset.psdperiod_enum = lorentzian;
     }
     else
     {
-      printf("Incorrect PSDPeriodModel=%s.\nPSDPeriodModel should [none, gaussian, lorentz].\n", parset.psdperiod_model);
+      printf("Incorrect PSDPeriodModel=%s.\nPSDPeriodModel should [none, delta, gaussian, lorentzian].\n", parset.psdperiod_model);
       exit(0);
     }
     

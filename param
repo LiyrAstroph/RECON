@@ -13,23 +13,23 @@ FileName        data/sim_celerite.txt     # file name
 # psd model configurations
 FlagDomain       0               # 0, frequency; 1, time
 
-PSDModel         harmonic           # simple, harmonic, carma
+PSDModel         carma           # simple, harmonic, carma
 
-PSDType          2               # simple,        0: single power-law
+PSDType          3:1               # simple,        0: single power-law
                                  #                1: DRW
                                  #                2: bending power-law
                                  # harmonic, number of haromic terms, 1-5
 
                                  # carma, orders p:q, e.g., 2:1
 
-PSDPeriodModel   gaussian            # None; Gaussian; Lorentz
+PSDPeriodModel   delta            # None; Delta, Gaussian; Lorentzian
 
 #===============================================
 # MCMC configurations
 V               2.0              # factor for extension of time interval in term of data
 W               2.0              # factor for time resolution in terms of data  
 
-FreqLimit       5.0e-5           # frequency limit below which PSD flattens off
+FreqLimit       1.0e-5           # frequency limit below which PSD flattens off
 FlagEndMatch    0                # end matching to reduce leakage, 0, no; 1, yes.
 FlagWhiteNoise  0                # white noise in PSD, 0, exclued; 1, included
 FlagSaveOutput  0                # if 1, only output PSD parameters, not frequency series parameters
@@ -46,9 +46,9 @@ FErr            0.1              # measurement noise
 #PSDArg         1.0e-3:2.5:0.0                          # single power-law:  A:alpha:noise
 #PSDArg         1.0e3:1.0e-2:0.0                        # DRW: A:fknee:noise                         
 #PSDArg         1.0e1:2.5:1.5:1.5e-2:0.01               # bending power-law: A:a1:a2:freq:noise
-#PSDArg          1.0e-1:1.5:0.0:5.0e1:5.0e-3:5.0e-5      # single power-law + periodic
-#PSDArg          1.0e2:5.0e-3:0.0:5.0e0:5.0e-3:0.00001  # DRW + periodic
+PSDArg          1.0e-1:1.5:0.0:1.0e1:5.0e-3:5.0e-5      # single power-law + periodic
+#PSDArg          1.0e2:5.0e-3:0.0:5.0e0:5.0e-3:5e-5  # DRW + periodic
 #PSDArg          1.0e1:2.5:1.5:1.5e-2:0.01:5.0e0:5.0e-3:5.0e-5   # bending power-law + periodic
 #PSDArg           1.0:1.0e-2:100.0:5.0e-3:6.0:0.0          # harmonic 
-PSDArg           1.0:5.0e-5:5.0e-3:1.0e-5:0.1:0.0         # carma   
+#PSDArg           1.0:5.0e-5:5.0e-3:1.0e-5:0.1:0.0         # carma   
 #===============================================
