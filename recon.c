@@ -672,13 +672,17 @@ void genlc(const void *model)
   // add periodic component
   if(parset.psdperiod_enum > none)
   {
-    for(i=1; i<nd_sim/2+1; i++)
+    for(i=1; i<nd_sim/2; i++)
     {
       freq = i*1.0/(nd_sim * DT);
       psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
       fft_work[i][0] += psd_sqrt * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
       fft_work[i][1] += psd_sqrt * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
+    i = nd_sim/2;
+    freq = i*1.0/(nd_sim * DT);
+    psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd-3); // the last 3 vars
+    fft_work[i][0] += psd_sqrt;
   }
   
   fftw_execute(pfft);
@@ -740,11 +744,12 @@ void genlc_array(const void *model)
       psdperiod_sqrt = workspace_genlc_period[which_particle_update];
     }
 
-    for(i=1; i<nd_sim/2+1; i++)
+    for(i=1; i<nd_sim/2; i++)
     {
       fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
       fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
+    fft_work[nd_sim/2][0] += psdperiod_sqrt[nd_sim/2-1] ;
   }
   
   fftw_execute(pfft);
@@ -792,11 +797,12 @@ void genlc_array_initial(const void *model)
     psdperiod_sqrt = workspace_genlc_period[which_particle_update];
     psdfunc_period_sqrt_array(freq_array, arg+num_params_psd-3, psdperiod_sqrt, nd_sim/2);
     
-    for(i=1; i<nd_sim/2+1; i++)
+    for(i=1; i<nd_sim/2; i++)
     {
       fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
       fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd + nd_sim-1+i] * 2.0*PI);
     }
+    fft_work[nd_sim/2][0] += psdperiod_sqrt[nd_sim/2-1] ;
   }
   
   fftw_execute(pfft);
@@ -887,7 +893,7 @@ double prob_initial_recon(const void *model)
     prob += -0.5*pow( flux_data_sim[i] - flux_data[i], 2.0)/(err_data[i] *err_data[i]);
   }
   prob += norm_prob;
-  
+
   return prob;
 }
 
