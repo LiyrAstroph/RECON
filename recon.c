@@ -288,7 +288,7 @@ int recon_init()
   {
     fptrset->log_likelihoods_cal = log_likelihoods_cal_recon;
     fptrset->log_likelihoods_cal_initial = log_likelihoods_cal_initial_recon;
-    fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_recon;
+    fptrset->log_likelihoods_cal_restart = log_likelihoods_cal_initial_recon;
   }
   else
   {
@@ -470,6 +470,8 @@ int recon_init()
   for(i=0; i<ndata; i++)
     norm_prob += (-log(err_data[i]));
 
+  DF = 1.0/(nd_sim * DT);
+
   time_sim = malloc(nd_sim * sizeof(double));
   flux_sim = malloc(nd_sim * sizeof(double));
   flux_sim_mean = malloc(nd_sim * sizeof(double));
@@ -492,7 +494,7 @@ int recon_init()
   // initialize frequency grid array
   for(i=0; i<nd_sim/2; i++)
   {
-    freq_array[i] = (i+1)*1.0/(nd_sim * DT);
+    freq_array[i] = (i+1)*DF;
   }
   // initialize fft_work
   for(i=0; i<nd_sim/2+1; i++)
@@ -668,12 +670,12 @@ void genlc(const void *model)
 
   for(i=0; i<nd_sim/2-1; i++)
   {
-    freq = (i+1)*1.0/(nd_sim * DT);
+    freq = (i+1)*DF;
     psd_sqrt = psdfunc_sqrt(freq, arg)/sqrt(2.0);
     fft_work[i+1][0] = pm[num_params_psd_tot+1+2*i] * psd_sqrt;
     fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] * psd_sqrt;
   }
-  freq = nd_sim/2*1.0/(nd_sim * DT);
+  freq = nd_sim/2*DF;
   psd_sqrt = psdfunc_sqrt(freq, arg);
   fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt;
   fft_work[nd_sim/2][1] = 0.0;
@@ -694,19 +696,19 @@ void genlc(const void *model)
   {
     for(i=1; i<nd_sim/2; i++)
     {
-      freq = i*1.0/(nd_sim * DT);
+      freq = i*DF;
       psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd_tot-3); // the last 3 vars
       fft_work[i][0] += psd_sqrt * cos(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
       fft_work[i][1] += psd_sqrt * sin(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
     }
     i = nd_sim/2;
-    freq = i*1.0/(nd_sim * DT);
+    freq = i*DF;
     psd_sqrt = psdfunc_period_sqrt(freq, arg+num_params_psd_tot-3); // the last 3 vars
     fft_work[i][0] += psd_sqrt;
   }
   else if(parset.psdperiod_enum > none)
   {
-    i0 = (int)( exp(pm[num_params_psd_tot - 2]) * (nd_sim * DT) ) + 1;
+    i0 = (int)( exp(pm[num_params_psd_tot - 2]) / DF );
     fft_work[i0][0] += exp(pm[num_params_psd_tot-3]) * cos(pm[num_params_psd_tot -1] * 2.0*PI);
     fft_work[i0][1] += exp(pm[num_params_psd_tot-3]) * sin(pm[num_params_psd_tot -1] * 2.0*PI);
   }
@@ -779,7 +781,7 @@ void genlc_array(const void *model)
   }
   else if(parset.psdperiod_enum > none)
   {
-    i0 = (int)( exp(pm[num_params_psd_tot - 2]) * (nd_sim * DT) ) + 1;
+    i0 = (int)( exp(pm[num_params_psd_tot - 2])/DF );
     fft_work[i0][0] += exp(pm[num_params_psd_tot-3]) * cos(pm[num_params_psd_tot -1] * 2.0*PI);
     fft_work[i0][1] += exp(pm[num_params_psd_tot-3]) * sin(pm[num_params_psd_tot -1] * 2.0*PI);
   }
@@ -838,7 +840,7 @@ void genlc_array_initial(const void *model)
   }
   else if(parset.psdperiod_enum > none)
   {
-    i0 = (int)( exp(pm[num_params_psd_tot - 2]) * (nd_sim * DT) ) + 1;
+    i0 = (int)( exp(pm[num_params_psd_tot - 2]) / DF );
     fft_work[i0][0] += exp(pm[num_params_psd_tot-3]) * cos(pm[num_params_psd_tot -1] * 2.0*PI);
     fft_work[i0][1] += exp(pm[num_params_psd_tot-3]) * sin(pm[num_params_psd_tot -1] * 2.0*PI);
   }
@@ -876,7 +878,7 @@ double prob_recon(const void *model)
       workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
       workspace_genlc_perturb[which_particle_update] = ptemp;
     }
-    else if(param < num_params_psd_prob)
+    else if(param < num_params_psd_prob) // only update when periodic psd parameters changed
     {
       ptemp = workspace_genlc_period[which_particle_update];
       workspace_genlc_period[which_particle_update] = workspace_genlc_period_perturb[which_particle_update];
@@ -899,8 +901,8 @@ double prob_recon(const void *model)
   }
   prob += norm_prob;
 
+  // record the parameter being changed
   which_parameter_update_prev[which_particle_update] = which_parameter_update;
-
   return prob;
 }
 

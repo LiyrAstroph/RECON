@@ -36,7 +36,7 @@ extern double *flux_sim_mean, *err_sim_mean;
 extern double *freq_array;
 extern complex **freq_array_pow;
 extern int idx_limit;
-extern double norm_psd, norm_prob;
+extern double norm_psd, norm_prob, DF;
 extern double *workspace_psd;
 extern double **workspace_genlc, **workspace_genlc_perturb;
 extern double **workspace_genlc_period, **workspace_genlc_period_perturb;

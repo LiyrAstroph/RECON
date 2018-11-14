@@ -32,7 +32,7 @@ double *flux_sim_mean, *err_sim_mean;
 double *freq_array;
 complex **freq_array_pow;
 int idx_limit;
-double norm_psd, norm_prob;
+double norm_psd, norm_prob, DF;
 double *workspace_psd;
 double **workspace_genlc, **workspace_genlc_perturb;
 double **workspace_genlc_period, **workspace_genlc_period_perturb;
