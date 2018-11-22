@@ -300,9 +300,9 @@ void read_parset()
       exit(0);
     }
 
-    if(parset.ferr <=0.0)
+    if(parset.ferr < 0.0)
     {
-      printf("#Incorrect ferr=%f\n. ferr should be positive.\n", parset.ferr);
+      printf("#Incorrect ferr=%f. FErr should not be negative.\n", parset.ferr);
       exit(0);
     }
 
