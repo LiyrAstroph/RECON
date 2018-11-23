@@ -1052,7 +1052,7 @@ double perturb_recon(void *model)
   do
   {
     rnd = dnest_rand();
-    if(rnd < 0.2)
+    if(rnd < 0.1)
       which = dnest_rand_int(num_params_psd_tot);
     else
       which = dnest_rand_int(num_recon) + num_params_psd_tot;
@@ -1342,7 +1342,7 @@ void set_par_range()
     var_range_model[i][0] = log(freq_limit_data_lower); //center
     var_range_model[i++][1] = log(freq_limit_data_upper);
 
-    var_range_model[i][0] = log(1.0e-6);   //sigma
+    var_range_model[i][0] = log(freq_limit_data_lower*0.5);   //sigma
     var_range_model[i++][1] = log(freq_limit_data_upper);
   }
   else if(parset.psdperiod_enum > none)
