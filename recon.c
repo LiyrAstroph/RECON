@@ -271,7 +271,12 @@ int recon_init()
 
   /* setup functions used for dnest*/
   fptrset->from_prior = from_prior_recon;
-  fptrset->perturb = perturb_recon;
+
+  if(recon_flag_limits == 0)
+    fptrset->perturb = perturb_recon;
+  else
+    fptrset->perturb = perturb_recon_limits;
+
   fptrset->restart_action = restart_action_recon;
   if(parset.flag_saveoutput == 0)
   {
@@ -312,8 +317,10 @@ int recon_init()
     }
 
     get_num_particles(options_file);
+    get_max_num_levels(options_file);
   }
   MPI_Bcast(&num_particles, 1, MPI_INT, roottask, MPI_COMM_WORLD);
+  MPI_Bcast(&max_num_levels, 1, MPI_INT, roottask, MPI_COMM_WORLD);
 
   num_params_psd_tot = parset.num_params_psd + parset.num_params_psdperiod;
 
@@ -1045,7 +1052,7 @@ double log_likelihoods_cal_recon_exam(const void *model)
 double perturb_recon(void *model)
 {
   double logH=0.0, width, rnd, limit1, limit2;
-  int which, which_level;
+  int which, which_level, size_levels;
   double *pm = (double *)model;
 
   /* sample variability parameters more frequently */
@@ -1059,18 +1066,61 @@ double perturb_recon(void *model)
   }while(par_fix[which] == 1);
 
   which_parameter_update = which;
+  
+  width = ( par_range_model[which][1] - par_range_model[which][0] );
+      
+  if(which < num_params_psd_tot + 1)
+  {
+    pm[which] += dnest_randh() * width;
+    dnest_wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
+  }
+  else if(which < num_params_psd_tot + nd_sim)
+  {
+    logH -= (-0.5*pow(pm[which], 2.0) );
+    pm[which] += dnest_randh() * width;
+    dnest_wrap(&(pm[which]), par_range_model[which][0], par_range_model[which][1]);
+    logH += (-0.5*pow(pm[which], 2.0) );
+  }
+  else
+  {
+    pm[which] += dnest_randh() * width;
+    dnest_wrap(&(pm[which]), 0.0, 1.0);
+  }
 
+  return logH;
+  
+}
+
+double perturb_recon_limits(void *model)
+{
+  double logH=0.0, width, rnd, limit1, limit2;
+  int which, which_level, size_levels;
+  double *pm = (double *)model;
+
+  /* sample variability parameters more frequently */
+  do
+  {
+    rnd = dnest_rand();
+    if(rnd < 0.1)
+      which = dnest_rand_int(num_params_psd_tot);
+    else
+      which = dnest_rand_int(num_recon) + num_params_psd_tot;
+  }while(par_fix[which] == 1);
+
+  which_parameter_update = which;
+  
+  size_levels  = dnest_get_size_levels();
   /* level-dependent width */
-  if(recon_flag_limits==0)
+  if(size_levels < max_num_levels)
   {
     width = ( par_range_model[which][1] - par_range_model[which][0] );
   }
   else
   {
     which_level_update = dnest_get_which_level_update();
-    which_level = which_level_update > (size_levels - 100)?(size_levels-100):which_level_update;
+    which_level = which_level_update > (size_levels - max_num_levels/2)?(size_levels-max_num_levels/2):which_level_update;
 
-    if( which_level > 0)
+    if( which_level > 0 )
     {
       limit1 = limits[(which_level-1) * num_params *2 + which *2];
       limit2 = limits[(which_level-1) * num_params *2 + which *2 + 1];
@@ -1081,9 +1131,7 @@ double perturb_recon(void *model)
       width = ( par_range_model[which][1] - par_range_model[which][0] );
     }
   }
-  
-  //width = ( par_range_model[which][1] - par_range_model[which][0] );
-  
+    
   if(which < num_params_psd_tot + 1)
   {
     pm[which] += dnest_randh() * width;
@@ -1360,8 +1408,8 @@ void set_par_range()
   var_range_model[i][0] = -10.0;  //zero-frequency power
   var_range_model[i++][1] = 10.0;
 
-  var_range_model[i][0] = -10.0;  //frequency series
-  var_range_model[i++][1] = 10.0;
+  var_range_model[i][0] = -5.0;  //frequency series
+  var_range_model[i++][1] = 5.0;
 
   // variability parameters
   for(i=0; i<num_params_psd_tot+1; i++)

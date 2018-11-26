@@ -19,6 +19,7 @@ void genlc_array(const void *model);
 void genlc_array_initial(const void *model);
 int get_line_number(char *fname);
 void get_num_particles(char *fname);
+void get_max_num_levels(char *fname);
 void get_posterior_sample_file(char *fname, char *samplefile);
 int read_data(char *fname, int n, double *t, double *f, double *e);
 void set_par_range();
@@ -92,6 +93,7 @@ double log_likelihoods_cal_recon(const void *model);
 double log_likelihoods_cal_initial_recon(const void *model);
 double log_likelihoods_cal_recon_exam(const void *model);
 double perturb_recon(void *model);
+double perturb_recon_limits(void *model);
 void restart_action_recon(int iflag);
 
 double (*psdfunc)(double, double *);

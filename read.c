@@ -682,3 +682,34 @@ void get_num_particles(char *fname)
   sscanf(buf, "%d", &num_particles);
   fclose(fp);
 }
+
+/*!
+ * get maximum number of levels from the option file.
+ */
+void get_max_num_levels(char *fname)
+{
+  FILE *fp;
+  char buf[256], buf1[256];
+  fp = fopen(fname, "r");
+  if(fp == NULL)
+  {
+    fprintf(stderr, "# Error: Cannot open file %s\n", fname);
+    exit(-1);
+  }
+
+  buf[0]='#';
+  while(buf[0]=='#')
+  {
+    fgets(buf, 256, fp);
+    if(sscanf(buf, "%s", buf1) < 1)  // a blank line
+    {
+      buf[0] = '#';
+    }
+  }
+  fgets(buf, 256, fp);
+  fgets(buf, 256, fp);
+  fgets(buf, 256, fp);
+  fgets(buf, 256, fp);
+  sscanf(buf, "%d", &max_num_levels);
+  fclose(fp);
+}

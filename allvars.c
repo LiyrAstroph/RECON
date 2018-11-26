@@ -48,7 +48,8 @@ int num_params, num_params_psd_tot, num_recon, num_params_psd_prob;
 double **par_range_model, **var_range_model, *par_fix_val;
 int *par_fix;
 
-int which_level_update, which_particle_update, which_parameter_update, num_particles;
+int which_level_update, which_particle_update, which_parameter_update,
+    num_particles, max_num_levels;
 
 int recon_flag_postprc; 
 double recon_temperature;

@@ -52,7 +52,8 @@ extern int num_params, num_params_psd_tot, num_recon, num_params_psd_prob;
 extern double **par_range_model, **var_range_model, *par_fix_val;
 extern int *par_fix;
 
-extern int which_level_update, which_particle_update, which_parameter_update, num_particles;
+extern int which_level_update, which_particle_update, which_parameter_update, 
+           num_particles, max_num_levels;
 
 extern int recon_flag_postprc; 
 extern double recon_temperature;
