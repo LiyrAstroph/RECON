@@ -396,6 +396,20 @@ int recon_init()
       err_data[i] /= flux_scale;
     }
 
+    flux_var = 0.0;
+    for(i=0; i<ndata; i++)
+    {
+      flux_var += (flux_data[i] - flux_mean/flux_scale) * (flux_data[i] - flux_mean/flux_scale);
+    }
+    flux_var /= (ndata-1);
+
+    err_mean = 0.0;
+    for(i=0; i<ndata; i++)
+    {
+      err_mean += err_data[i];
+    }
+    err_mean /= ndata;
+
   
     V = parset.V;
     W = parset.W;
@@ -409,6 +423,8 @@ int recon_init()
     DT = time_cad_media/W;
     nd_sim = ceil(Tall/DT) + 1;
     nd_sim = (nd_sim/2) * 2; //make sure it is an even number.
+
+    noise_power = 2.0*DT * err_mean*err_mean;
 
     if(thistask == roottask)
     {
@@ -1118,7 +1134,7 @@ double perturb_recon_limits(void *model)
   else
   {
     which_level_update = dnest_get_which_level_update();
-    which_level = which_level_update > (size_levels - max_num_levels/2)?(size_levels-max_num_levels/2):which_level_update;
+    which_level = which_level_update > (max_num_levels/2)?(max_num_levels/2):which_level_update;
 
     if( which_level > 0 )
     {
@@ -1384,13 +1400,13 @@ void set_par_range()
 
   if(parset.psdperiod_enum > delta)
   {
-    var_range_model[i][0] = log(1.0e-10);  //Ap
-    var_range_model[i++][1] = log(1.0e6);
+    var_range_model[i][0] = log(noise_power);  //Ap
+    var_range_model[i++][1] = log(flux_var);
 
     var_range_model[i][0] = log(freq_limit_data_lower); //center
     var_range_model[i++][1] = log(freq_limit_data_upper);
 
-    var_range_model[i][0] = log(freq_limit_data_lower*0.5);   //sigma
+    var_range_model[i][0] = log(freq_limit_data_lower/V*0.2);   //sigma
     var_range_model[i++][1] = log(freq_limit_data_upper);
   }
   else if(parset.psdperiod_enum > none)
