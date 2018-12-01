@@ -96,6 +96,7 @@ double perturb_recon(void *model);
 double perturb_recon_limits(void *model);
 void restart_action_recon(int iflag);
 void accept_action_recon();
+void kill_action_recon(int i, int i_copy);
 
 double (*psdfunc)(double, double *);
 double (*psdfunc_sqrt)(double, double *);

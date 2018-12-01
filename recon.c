@@ -279,6 +279,7 @@ int recon_init()
 
   fptrset->restart_action = restart_action_recon;
   fptrset->accept_action = accept_action_recon;
+  fptrset->kill_action = kill_action_recon;
   if(parset.flag_saveoutput == 0)
   {
     fptrset->print_particle = print_particle_recon;
@@ -844,6 +845,15 @@ void accept_action_recon()
     workspace_genlc_period_perturb[which_particle_update] = ptemp;
   }
   return;
+}
+
+/*
+ * action when DNest particle is killed.
+ */
+void kill_action_recon(int i, int i_copy)
+{
+  memcpy(workspace_genlc[i], workspace_genlc[i_copy], nd_sim/2*sizeof(double));
+  memcpy(workspace_genlc_period[i], workspace_genlc_period[i_copy], nd_sim/2*sizeof(double));
 }
 
 /*
