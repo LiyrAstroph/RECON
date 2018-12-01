@@ -95,6 +95,7 @@ double log_likelihoods_cal_recon_exam(const void *model);
 double perturb_recon(void *model);
 double perturb_recon_limits(void *model);
 void restart_action_recon(int iflag);
+void accept_action_recon();
 
 double (*psdfunc)(double, double *);
 double (*psdfunc_sqrt)(double, double *);

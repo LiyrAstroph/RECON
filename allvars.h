@@ -41,7 +41,6 @@ extern double norm_psd, norm_prob, DF;
 extern double *workspace_psd;
 extern double **workspace_genlc, **workspace_genlc_perturb;
 extern double **workspace_genlc_period, **workspace_genlc_period_perturb;
-extern int *which_parameter_update_prev;
 
 
 extern gsl_interp_accel *gsl_acc_sim;
@@ -53,8 +52,7 @@ extern int num_params, num_params_psd_tot, num_recon, num_params_psd_prob;
 extern double **par_range_model, **var_range_model, *par_fix_val;
 extern int *par_fix;
 
-extern int which_level_update, which_particle_update, which_parameter_update, 
-           num_particles, max_num_levels;
+extern int which_particle_update, which_parameter_update, num_particles, max_num_levels;
 
 extern int recon_flag_postprc; 
 extern double recon_temperature;

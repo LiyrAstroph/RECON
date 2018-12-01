@@ -37,7 +37,6 @@ double norm_psd, norm_prob, DF;
 double *workspace_psd;
 double **workspace_genlc, **workspace_genlc_perturb;
 double **workspace_genlc_period, **workspace_genlc_period_perturb;
-int *which_parameter_update_prev;
 
 gsl_interp_accel *gsl_acc_sim;
 gsl_interp  *gsl_linear_sim;
@@ -49,8 +48,7 @@ int num_params, num_params_psd_tot, num_recon, num_params_psd_prob;
 double **par_range_model, **var_range_model, *par_fix_val;
 int *par_fix;
 
-int which_level_update, which_particle_update, which_parameter_update,
-    num_particles, max_num_levels;
+int which_particle_update, which_parameter_update, num_particles, max_num_levels;
 
 int recon_flag_postprc; 
 double recon_temperature;

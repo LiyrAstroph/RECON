@@ -278,6 +278,7 @@ int recon_init()
     fptrset->perturb = perturb_recon_limits;
 
   fptrset->restart_action = restart_action_recon;
+  fptrset->accept_action = accept_action_recon;
   if(parset.flag_saveoutput == 0)
   {
     fptrset->print_particle = print_particle_recon;
@@ -558,8 +559,6 @@ int recon_init()
     }
   }
 
-  which_parameter_update = -1;
-  which_parameter_update_prev = malloc(num_particles * sizeof(int));
   workspace_genlc = malloc(num_particles * sizeof(double *));
   workspace_genlc_perturb = malloc(num_particles * sizeof(double *));
   for(i=0; i<num_particles; i++)
@@ -651,7 +650,6 @@ int recon_end()
     free(freq_array_pow);
   }
 
-  free(which_parameter_update_prev);
   for(i=0; i<num_particles; i++)
   {
     free(workspace_genlc[i]);
@@ -761,6 +759,7 @@ void genlc_array(const void *model)
   double *pm = (double *)model;
 
   arg = pm;
+
   if(which_parameter_update < parset.num_params_psd)
   {
     psd_sqrt = workspace_genlc_perturb[which_particle_update];
@@ -772,7 +771,7 @@ void genlc_array(const void *model)
   }
 
   fft_work[0][0] = pm[num_params_psd_tot+0]; //zero-frequency power.
-  //fft_work[0][1] = 0.0;
+  fft_work[0][1] = 0.0;
 
   for(i=0; i<nd_sim/2-1; i++)
   {
@@ -780,15 +779,15 @@ void genlc_array(const void *model)
     fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
   }
   fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt[nd_sim/2-1];
-  //fft_work[nd_sim/2][1] = 0.0;
+  fft_work[nd_sim/2][1] = 0.0;
 
   // add periodic component
   if(parset.psdperiod_enum > delta)
   {
-    if(which_parameter_update < num_params_psd_tot && which_parameter_update >= parset.num_params_psd)
+    if( (which_parameter_update < num_params_psd_prob) && (which_parameter_update >= parset.num_params_psd) )
     {
       psdperiod_sqrt = workspace_genlc_period_perturb[which_particle_update];
-      psdfunc_period_sqrt_array(freq_array, arg+num_params_psd_tot-3, psdperiod_sqrt, nd_sim/2);
+      psdfunc_period_sqrt_array(freq_array, arg+parset.num_params_psd, psdperiod_sqrt, nd_sim/2);
     }
     else
     {
@@ -821,6 +820,33 @@ void genlc_array(const void *model)
 }
 
 /*
+ * action when perturbed move is accepted
+ *
+ */
+void accept_action_recon()
+{
+  double *ptemp = NULL;
+  int param, i;
+  
+  param = which_parameter_update;
+
+  if(param < parset.num_params_psd)
+  {
+    ptemp = workspace_genlc[which_particle_update];
+    workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
+    workspace_genlc_perturb[which_particle_update] = ptemp;
+  }
+    
+  if( (param < num_params_psd_prob) && (param >= parset.num_params_psd) ) // only update when periodic psd parameters changed
+  {
+    ptemp = workspace_genlc_period[which_particle_update];
+    workspace_genlc_period[which_particle_update] = workspace_genlc_period_perturb[which_particle_update];
+    workspace_genlc_period_perturb[which_particle_update] = ptemp;
+  }
+  return;
+}
+
+/*
  *========================================================================
  * fast version of genlc.
  * generate lc at the initial step.
@@ -838,7 +864,7 @@ void genlc_array_initial(const void *model)
   psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
   
   fft_work[0][0] = pm[num_params_psd_tot+0]; //zero-frequency power.
-  //fft_work[0][1] = 0.0;
+  fft_work[0][1] = 0.0;
 
   for(i=0; i<nd_sim/2-1; i++)
   {
@@ -846,13 +872,13 @@ void genlc_array_initial(const void *model)
     fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
   }
   fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt[nd_sim/2-1];
-  //fft_work[nd_sim/2][1] = 0.0;
+  fft_work[nd_sim/2][1] = 0.0;
 
   // add periodic component
   if(parset.psdperiod_enum > delta)
   {
     psdperiod_sqrt = workspace_genlc_period[which_particle_update];
-    psdfunc_period_sqrt_array(freq_array, arg+num_params_psd_tot-3, psdperiod_sqrt, nd_sim/2);
+    psdfunc_period_sqrt_array(freq_array, arg+parset.num_params_psd, psdperiod_sqrt, nd_sim/2);
     
     for(i=1; i<nd_sim/2; i++)
     {
@@ -887,27 +913,10 @@ void genlc_array_initial(const void *model)
  */
 double prob_recon(const void *model)
 {
-  double prob=0.0, *ptemp;
-  int i, param;
+  double prob=0.0;
+  int i;
 
   which_particle_update = dnest_get_which_particle_update();
-
-  if(dnest_perturb_accept[which_particle_update] == 1)
-  {
-    param = which_parameter_update_prev[which_particle_update];
-    if(param < parset.num_params_psd)
-    {
-      ptemp = workspace_genlc[which_particle_update];
-      workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
-      workspace_genlc_perturb[which_particle_update] = ptemp;
-    }
-    else if(param < num_params_psd_prob) // only update when periodic psd parameters changed
-    {
-      ptemp = workspace_genlc_period[which_particle_update];
-      workspace_genlc_period[which_particle_update] = workspace_genlc_period_perturb[which_particle_update];
-      workspace_genlc_period_perturb[which_particle_update] = ptemp;
-    }
-  }
 
   genlc_array(model);
   
@@ -924,8 +933,6 @@ double prob_recon(const void *model)
   }
   prob += norm_prob;
 
-  // record the parameter being changed
-  which_parameter_update_prev[which_particle_update] = which_parameter_update;
   return prob;
 }
 
@@ -941,7 +948,6 @@ double prob_initial_recon(const void *model)
   int i;
 
   which_particle_update = dnest_get_which_particle_update();
-  which_parameter_update = -1;
 
   genlc_array_initial(model);
   
@@ -1067,8 +1073,8 @@ double log_likelihoods_cal_recon_exam(const void *model)
 
 double perturb_recon(void *model)
 {
-  double logH=0.0, width, rnd, limit1, limit2;
-  int which, which_level, size_levels;
+  double logH=0.0, width, rnd;
+  int which;
   double *pm = (double *)model;
 
   /* sample variability parameters more frequently */
@@ -1110,7 +1116,7 @@ double perturb_recon(void *model)
 double perturb_recon_limits(void *model)
 {
   double logH=0.0, width, rnd, limit1, limit2;
-  int which, which_level, size_levels;
+  int which, which_level;
   double *pm = (double *)model;
 
   /* sample variability parameters more frequently */
@@ -1125,29 +1131,19 @@ double perturb_recon_limits(void *model)
 
   which_parameter_update = which;
   
-  size_levels  = dnest_get_size_levels();
-  /* level-dependent width */
-  if(size_levels < max_num_levels)
+  which_level = dnest_get_which_level_update();
+
+  if( which_level > 0 )
   {
-    width = ( par_range_model[which][1] - par_range_model[which][0] );
+    limit1 = limits[(which_level-1) * num_params *2 + which *2];
+    limit2 = limits[(which_level-1) * num_params *2 + which *2 + 1];
+    width = limit2 - limit1;
   }
   else
   {
-    which_level_update = dnest_get_which_level_update();
-    which_level = which_level_update > (max_num_levels/2)?(max_num_levels/2):which_level_update;
-
-    if( which_level > 0 )
-    {
-      limit1 = limits[(which_level-1) * num_params *2 + which *2];
-      limit2 = limits[(which_level-1) * num_params *2 + which *2 + 1];
-      width = limit2 - limit1;
-    }
-    else
-    {
-      width = ( par_range_model[which][1] - par_range_model[which][0] );
-    }
+    width = ( par_range_model[which][1] - par_range_model[which][0] );
   }
-    
+      
   if(which < num_params_psd_tot + 1)
   {
     pm[which] += dnest_randh() * width;
@@ -1174,6 +1170,7 @@ void restart_action_recon(int iflag)
 {
   return;
 }
+
 
 int get_line_number(char *fname)
 {
