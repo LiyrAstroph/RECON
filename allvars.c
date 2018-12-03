@@ -44,7 +44,7 @@ gsl_interp  *gsl_linear_sim;
 fftw_plan pfft;
 fftw_complex *fft_work;
 
-int num_params, num_params_psd_tot, num_recon, num_params_psd_prob;
+int num_params, num_params_psd_tot, num_recon;
 double **par_range_model, **var_range_model, *par_fix_val;
 int *par_fix;
 

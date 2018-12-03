@@ -278,8 +278,16 @@ int recon_init()
     fptrset->perturb = perturb_recon_limits;
 
   fptrset->restart_action = restart_action_recon;
-  fptrset->accept_action = accept_action_recon;
-  fptrset->kill_action = kill_action_recon;
+  if(parset.psdperiod_enum > delta)
+  {
+    fptrset->accept_action = accept_action_recon_period;
+    fptrset->kill_action = kill_action_recon_period;
+  }
+  else
+  {
+    fptrset->accept_action = accept_action_recon_other;
+    fptrset->kill_action = kill_action_recon_other;
+  }
   if(parset.flag_saveoutput == 0)
   {
     fptrset->print_particle = print_particle_recon;
@@ -462,11 +470,6 @@ int recon_init()
   if(parset.psdperiod_enum > delta)
   {
     num_recon += nd_sim/2;
-    num_params_psd_prob = num_params_psd_tot;
-  }
-  else if(parset.psdperiod_enum > none)
-  {
-    num_params_psd_prob = parset.num_params_psd;
   }
 
   num_params = num_recon + num_params_psd_tot;
@@ -483,7 +486,6 @@ int recon_init()
 
   par_fix = (int *) malloc(num_params * sizeof(int));
   par_fix_val = (double *) malloc(num_params * sizeof(double));
-
   
   set_par_range();
   set_par_fix();
@@ -755,8 +757,120 @@ void genlc(const void *model)
  */
 void genlc_array(const void *model)
 {
-  int i, i0;
+  int i;
+  double *arg, *psd_sqrt;
+  double *pm = (double *)model;
+
+  arg = pm;
+
+  if(which_parameter_update < parset.num_params_psd)
+  {
+    psd_sqrt = workspace_genlc_perturb[which_particle_update];
+    psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
+  }
+  else
+  {
+    psd_sqrt = workspace_genlc[which_particle_update];
+  }
+
+  fft_work[0][0] = pm[num_params_psd_tot+0]; //zero-frequency power.
+  fft_work[0][1] = 0.0;
+
+  for(i=0; i<nd_sim/2-1; i++)
+  {
+    fft_work[i+1][0] = pm[num_params_psd_tot+1+2*i] * psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
+  }
+  fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt[nd_sim/2-1];
+  fft_work[nd_sim/2][1] = 0.0;
+  
+  fftw_execute(pfft);
+
+  // normalization
+  for(i=0; i<nd_sim; i++)
+  {
+    flux_sim[i] = flux_sim[i] * norm_psd;
+  }
+
+  return;
+}
+
+/*
+ *========================================================================
+ * fast version of genlc for cases of simple periodic PSD
+ * calculate PSD for a frequecy series at the same calling.
+ *
+ *========================================================================
+ */
+void genlc_array_simple_period(const void *model)
+{
+  int i;
   double *arg, *psd_sqrt, *psdperiod_sqrt;
+  double *pm = (double *)model;
+
+  arg = pm;
+
+  if(which_parameter_update < parset.num_params_psd)
+  {
+    psd_sqrt = workspace_genlc_perturb[which_particle_update];
+    psdfunc_sqrt_array(freq_array, arg, psd_sqrt, nd_sim/2);
+
+    psdperiod_sqrt = workspace_genlc_period[which_particle_update];
+  }
+  else if(which_parameter_update < num_params_psd_tot)
+  {
+    psd_sqrt = workspace_genlc[which_particle_update];
+
+    psdperiod_sqrt = workspace_genlc_period_perturb[which_particle_update];
+    psdfunc_period_sqrt_array(freq_array, arg+parset.num_params_psd, psdperiod_sqrt, nd_sim/2);
+  }
+  else
+  {
+    psd_sqrt = workspace_genlc[which_particle_update];
+    psdperiod_sqrt = workspace_genlc_period[which_particle_update];
+  }
+
+  fft_work[0][0] = pm[num_params_psd_tot+0]; //zero-frequency power.
+  fft_work[0][1] = 0.0;
+
+  for(i=0; i<nd_sim/2-1; i++)
+  {
+    fft_work[i+1][0] = pm[num_params_psd_tot+1+2*i] * psd_sqrt[i]/sqrt(2.0);
+    fft_work[i+1][1] = pm[num_params_psd_tot+1+2*i+1] *  psd_sqrt[i]/sqrt(2.0);
+  }
+  fft_work[nd_sim/2][0] = pm[num_params_psd_tot + nd_sim-1] * psd_sqrt[nd_sim/2-1];
+  fft_work[nd_sim/2][1] = 0.0;
+
+  // add periodic component
+  for(i=1; i<nd_sim/2; i++)
+  {
+    fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
+    fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
+  }
+  fft_work[nd_sim/2][0] += psdperiod_sqrt[nd_sim/2-1] ;
+  
+  fftw_execute(pfft);
+
+  // normalization
+  for(i=0; i<nd_sim; i++)
+  {
+    flux_sim[i] = flux_sim[i] * norm_psd;
+  }
+
+  return;
+}
+
+/*
+ *========================================================================
+ * fast version of genlc for cases of Delta periodic PSD
+ * calculate PSD for a frequecy series at the same calling.
+ *
+ *========================================================================
+ */
+void genlc_array_simple_delta(const void *model)
+{
+  int i, i0;
+  double *arg, *psd_sqrt;
   double *pm = (double *)model;
 
   arg = pm;
@@ -783,31 +897,10 @@ void genlc_array(const void *model)
   fft_work[nd_sim/2][1] = 0.0;
 
   // add periodic component
-  if(parset.psdperiod_enum > delta)
-  {
-    if( (which_parameter_update < num_params_psd_prob) && (which_parameter_update >= parset.num_params_psd) )
-    {
-      psdperiod_sqrt = workspace_genlc_period_perturb[which_particle_update];
-      psdfunc_period_sqrt_array(freq_array, arg+parset.num_params_psd, psdperiod_sqrt, nd_sim/2);
-    }
-    else
-    {
-      psdperiod_sqrt = workspace_genlc_period[which_particle_update];
-    }
-
-    for(i=1; i<nd_sim/2; i++)
-    {
-      fft_work[i][0] += psdperiod_sqrt[i-1] * cos(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
-      fft_work[i][1] += psdperiod_sqrt[i-1] * sin(pm[num_params_psd_tot + nd_sim-1+i] * 2.0*PI);
-    }
-    fft_work[nd_sim/2][0] += psdperiod_sqrt[nd_sim/2-1] ;
-  }
-  else if(parset.psdperiod_enum > none)
-  {
-    i0 = (int)( exp(pm[num_params_psd_tot - 2])/DF );
-    fft_work[i0][0] += exp(pm[num_params_psd_tot-3]) * cos(pm[num_params_psd_tot -1] * 2.0*PI);
-    fft_work[i0][1] += exp(pm[num_params_psd_tot-3]) * sin(pm[num_params_psd_tot -1] * 2.0*PI);
-  }
+  i0 = (int)( exp(pm[num_params_psd_tot - 2])/DF );
+  
+  fft_work[i0][0] += exp(pm[num_params_psd_tot-3]) * cos(pm[num_params_psd_tot -1] * 2.0*PI);
+  fft_work[i0][1] += exp(pm[num_params_psd_tot-3]) * sin(pm[num_params_psd_tot -1] * 2.0*PI);
   
   fftw_execute(pfft);
 
@@ -821,13 +914,13 @@ void genlc_array(const void *model)
 }
 
 /*
- * action when perturbed move is accepted
+ * action when perturbed move is accepted for periodical PSD cases.
  *
  */
-void accept_action_recon()
+void accept_action_recon_period()
 {
   double *ptemp = NULL;
-  int param, i;
+  int param;
   
   param = which_parameter_update;
 
@@ -837,8 +930,7 @@ void accept_action_recon()
     workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
     workspace_genlc_perturb[which_particle_update] = ptemp;
   }
-    
-  if( (param < num_params_psd_prob) && (param >= parset.num_params_psd) ) // only update when periodic psd parameters changed
+  else if( param < num_params_psd_tot ) // only update when periodic psd parameters changed
   {
     ptemp = workspace_genlc_period[which_particle_update];
     workspace_genlc_period[which_particle_update] = workspace_genlc_period_perturb[which_particle_update];
@@ -846,14 +938,36 @@ void accept_action_recon()
   }
   return;
 }
+/*
+ * action when perturbed move is accepted for other PSD cases.
+ *
+ */
+void accept_action_recon_other()
+{
+  double *ptemp = NULL;
+  int param;
+  
+  param = which_parameter_update;
+  if(param < parset.num_params_psd)
+  {
+    ptemp = workspace_genlc[which_particle_update];
+    workspace_genlc[which_particle_update] = workspace_genlc_perturb[which_particle_update];
+    workspace_genlc_perturb[which_particle_update] = ptemp;
+  }
+  return;
+}
 
 /*
- * action when DNest particle is killed.
+ * action when DNest particle is killed for periodic PSD cases.
  */
-void kill_action_recon(int i, int i_copy)
+void kill_action_recon_period(int i, int i_copy)
 {
   memcpy(workspace_genlc[i], workspace_genlc[i_copy], nd_sim/2*sizeof(double));
   memcpy(workspace_genlc_period[i], workspace_genlc_period[i_copy], nd_sim/2*sizeof(double));
+}
+void kill_action_recon_other(int i, int i_copy)
+{
+  memcpy(workspace_genlc[i], workspace_genlc[i_copy], nd_sim/2*sizeof(double));
 }
 
 /*
@@ -928,7 +1042,7 @@ double prob_recon(const void *model)
 
   which_particle_update = dnest_get_which_particle_update();
 
-  genlc_array(model);
+  func_genlc_array(model);
   
   gsl_interp_init(gsl_linear_sim, time_sim, flux_sim, nd_sim);
   
@@ -1467,30 +1581,35 @@ void set_psd_functions()
     case none:
       psdfunc_period_array = NULL;
       psdfunc_period_sqrt_array = NULL;
+      func_genlc_array = genlc_array;
       parset.num_params_psdperiod = 0;
       break;
 
     case delta:
       psdfunc_period_array = NULL;
       psdfunc_period_sqrt_array = NULL;
+      func_genlc_array = genlc_array_simple_delta;
       parset.num_params_psdperiod = 3;
       break;
 
     case gaussian:
       psdfunc_period_array = psd_gaussian_array;
       psdfunc_period_sqrt_array = psd_gaussian_sqrt_array;
+      func_genlc_array = genlc_array_simple_period;
       parset.num_params_psdperiod = 3;
       break;
 
     case lorentzian:
       psdfunc_period_array = psd_lorentz_array;
       psdfunc_period_sqrt_array = psd_lorentz_sqrt_array;
+      func_genlc_array = genlc_array_simple_period;
       parset.num_params_psdperiod = 3; 
       break;
 
     default:
       psdfunc_period_array = NULL;
       psdfunc_period_sqrt_array = NULL;
+      func_genlc_array = genlc_array;
       parset.num_params_psdperiod = 0;
       break;
   }

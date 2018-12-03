@@ -17,6 +17,8 @@ double recon_run(int argc, char **argv);
 void genlc(const void *model);
 void genlc_array(const void *model);
 void genlc_array_initial(const void *model);
+void genlc_array_simple_period(const void *model);
+void genlc_array_simple_delta(const void *model);
 int get_line_number(char *fname);
 void get_num_particles(char *fname);
 void get_max_num_levels(char *fname);
@@ -95,8 +97,10 @@ double log_likelihoods_cal_recon_exam(const void *model);
 double perturb_recon(void *model);
 double perturb_recon_limits(void *model);
 void restart_action_recon(int iflag);
-void accept_action_recon();
-void kill_action_recon(int i, int i_copy);
+void accept_action_recon_period();
+void accept_action_recon_other();
+void kill_action_recon_period(int i, int i_copy);
+void kill_action_recon_other(int i, int i_copy);
 
 double (*psdfunc)(double, double *);
 double (*psdfunc_sqrt)(double, double *);
@@ -109,4 +113,6 @@ void (*psdfunc_sqrt_array)(double *, double *, double *, int );
 
 void (*psdfunc_period_array)(double *, double *, double *, int );
 void (*psdfunc_period_sqrt_array)(double *, double *, double *, int );
+
+void (*func_genlc_array)(const void *);
 #endif
