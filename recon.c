@@ -1521,13 +1521,21 @@ void set_par_range()
 
   if(parset.psdperiod_enum > delta)
   {
-    var_range_model[i][0] = log(noise_power);  //Ap
-    var_range_model[i++][1] = log(flux_var);
+    if(noise_power < flux_var)
+    {
+      var_range_model[i][0] = log(noise_power);  //Ap
+      var_range_model[i++][1] = log(flux_var);
+    }
+    else
+    {
+      var_range_model[i][0] = log(noise_power*0.001);  //Ap
+      var_range_model[i++][1] = log(noise_power*10.0);
+    }
 
     var_range_model[i][0] = log(freq_limit_data_lower); //center
     var_range_model[i++][1] = log(freq_limit_data_upper);
 
-    var_range_model[i][0] = log(freq_limit_data_lower/V*0.2);   //sigma
+    var_range_model[i][0] = log(freq_limit_data_lower*0.001);   //sigma
     var_range_model[i++][1] = log(freq_limit_data_upper);
   }
   else if(parset.psdperiod_enum > none)
@@ -1567,6 +1575,7 @@ void set_par_range()
     par_range_model[i][0] = 0.0;
     par_range_model[i][1] = 1.0;
   }
+
   return;
 }
 
