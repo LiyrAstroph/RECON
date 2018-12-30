@@ -443,10 +443,13 @@ double psd_gaussian(double fk, double *arg)
 void psd_gaussian_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
 {
   double Ap=exp(arg[0]), center=exp(arg[1]), sigma=exp(arg[2]);
+  double factor;
   int i;
+
+  factor = sqrt(Ap/sqrt(2.0*PI)/sigma);
   for(i=0; i<n; i++)
   {
-    psd_sqrt[i] = sqrt(Ap * 1.0/sqrt(2.0*PI)/sigma * exp(-0.5 * pow( (fk[i] - center)/sigma, 2.0 )));
+    psd_sqrt[i] = factor * exp(-0.25 * (fk[i] - center)*(fk[i]-center)/sigma/sigma);
   }
 }
 
@@ -480,10 +483,13 @@ double psd_lorentz(double fk, double *arg)
 void psd_lorentz_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
 {
   double Ap=exp(arg[0]), center=exp(arg[1]), width=exp(arg[2]);
+  double factor;
   int i;
+
+  factor = Ap/PI *width;
   for(i=0; i<n; i++)
   {
-    psd_sqrt[i] = sqrt( Ap/PI *width/(width*width + (fk[i]-center)*(fk[i]-center)) );
+    psd_sqrt[i] = sqrt( factor/(width*width + (fk[i]-center)*(fk[i]-center)) );
   }
 }
 
