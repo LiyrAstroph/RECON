@@ -30,7 +30,7 @@ void read_parset()
 
     FILE *fparam;
     int i, j, k, nt;
-    char str[256], buf1[256], buf2[256], buf3[256];
+    char str[256], buf1[256], buf2[256], buf3[256], *pstr;
     int id[MAXTAGS];
     void *addr[MAXTAGS];
     char tag[MAXTAGS][50];
@@ -159,11 +159,6 @@ void read_parset()
             *((double *) addr[j]) = atof(buf2);
             break;
           case STRING:
-            // convert to lower case
-            for(k=0; k<strlen(buf2); k++)
-            {
-              buf2[k] = tolower(buf2[k]);
-            }
             strcpy(addr[j], buf2);
             break;
           case INT:
@@ -179,6 +174,19 @@ void read_parset()
       }
     }
     fclose(fparam);
+
+
+    // convert string to lower case
+    pstr = parset.psd_model;
+    for(k=0; k<strlen(pstr); k++)
+    {
+      pstr[k] = tolower(pstr[k]);
+    }
+    pstr = parset.psdperiod_model;
+    for(k=0; k<strlen(pstr); k++)
+    {
+      pstr[k] = tolower(pstr[k]);
+    }
 
     // check domain
     if(parset.flag_domain != 0)
