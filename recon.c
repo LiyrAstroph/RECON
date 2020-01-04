@@ -1242,6 +1242,12 @@ void set_par_range()
     par_range_model[i][0] = fmax(var_range_model[i][0], par_range_model[i][0]);
     par_range_model[i][1] = fmin(var_range_model[i][1], par_range_model[i][1]);
   }
+
+  if(parset.psdperiod_enum == delta)
+  {
+    par_range_model[num_params_psd_tot-1][0] = var_range_model[num_params_psd_tot-1][0];
+    par_range_model[num_params_psd_tot-1][1] = var_range_model[num_params_psd_tot-1][1];
+  }
   
   i = num_params_psd_tot;
   par_range_model[i][0] = var_range_model[num_params_psd_tot][0];
