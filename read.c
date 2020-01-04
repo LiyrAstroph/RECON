@@ -72,6 +72,10 @@ void read_parset()
     addr[nt] = &parset.psdperiod_model;
     id[nt++] = STRING;
 
+    strcpy(tag[nt], "FlagOnlyFit");
+    addr[nt] = &parset.flag_onlyfit;
+    id[nt++] = INT;
+
     strcpy(tag[nt], "PSDArg");
     addr[nt] = &parset.str_psd_arg;
     id[nt++] = STRING;
@@ -133,6 +137,7 @@ void read_parset()
     parset.carma_q = 0;
     parset.psdperiod_enum = none;
     parset.flag_domain = 0;
+    parset.flag_onlyfit = 0;
 
     while(!feof(fparam))
     {
@@ -318,6 +323,12 @@ void read_parset()
     {
       parset.slope_endmatch = 0.0;
       parset.flag_endmatch = 0;
+      parset.flag_onlyfit = 0;
+    }
+
+    if(recon_flag_sim == 1)
+    {
+      parset.flag_onlyfit = 0;
     }
 
   }

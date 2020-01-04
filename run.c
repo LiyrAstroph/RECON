@@ -170,8 +170,11 @@ double recon_run(int argc, char **argv)
     if(recon_flag_cal_psd != 1 && recon_flag_sim != 1)
     {
       logz_fit = psd_fit();
-    }  
-    logz = recon();
+    } 
+    if(parset.flag_onlyfit != 1) 
+    {
+      logz = recon();
+    }
     end();
   }
 

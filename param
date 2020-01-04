@@ -13,17 +13,18 @@ FileName        data/sim.txt     # file name
 # psd model configurations
 FlagDomain       0               # 0, frequency; 1, time
 
-PSDModel         carma           # simple, harmonic, carma
+PSDModel         simple           # simple, harmonic, carma
 
-PSDType          2:1               # simple,        0: single power-law
+PSDType          0             # simple,        0: single power-law
                                  #                1: DRW
                                  #                2: bending power-law
                                  # harmonic, number of haromic terms, 1-5
 
                                  # carma, orders p:q, e.g., 2:1
 
-PSDPeriodModel   Delta            # None; Delta, Gaussian; Lorentzian
+PSDPeriodModel   Gaussian            # None; Delta, Gaussian; Lorentzian
 
+FlagOnlyFit      0               # 1, only do periodogram fitting; 0, do full analysis
 #===============================================
 # MCMC configurations
 V               2.0              # factor for extension of time interval in term of data

@@ -101,6 +101,7 @@ typedef struct
   int flag_endmatch;
   int flag_whitenoise;
   int flag_saveoutput;
+  int flag_onlyfit;
 }PARSET;
 extern PARSET parset;
 
