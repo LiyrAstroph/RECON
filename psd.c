@@ -24,14 +24,10 @@
 int psddata_cal()
 {
   FILE *fp;
-  int i, nf;
-  double *freq, *psd;
+  int i;
   char fname[256], str1[256], str2[256], *pstr;
 
-  freq = malloc(ndata * sizeof(double));
-  psd = malloc(ndata * sizeof(double));
-
-  psd_fft(time_data, flux_data, ndata, freq, psd, &nf);
+  psd_fft(time_data, flux_data, ndata, freq_data, psd_data, &nf_data);
 
   strcpy(str1, parset.file_name);
 
@@ -50,16 +46,14 @@ int psddata_cal()
     exit(0);
   }
 
-  for(i=0; i<nf; i++)
+  for(i=0; i<nf_data; i++)
   {
-    fprintf(fp, "%e %e\n", freq[i], psd[i]);
+    fprintf(fp, "%e %e\n", freq_data[i], psd_data[i]);
   }
   fclose(fp);
 
-  psd_fit_check(freq, psd, nf);
+  psd_fit_check(freq_data, psd_data, nf_data);
 
-  free(freq);
-  free(psd);
   return 0;
 }
 

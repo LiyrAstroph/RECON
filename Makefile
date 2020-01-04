@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 CC       = mpicc
-OPTIMIZE = -O2 -Wall
+OPTIMIZE = -O2 -Wall -fPIC
 
 
 #------------target system---------
@@ -16,8 +16,8 @@ GSL_INCL    = $(shell pkg-config --cflags gsl)
 GSL_LIBS    = $(shell pkg-config --libs gsl) 
 #LAPACK_INCL = -I/usr/include/lapacke
 #LAPACK_LIBS = -L/usr/lib64 -llapacke -llapack -lblas
-DNEST_INCL  = -I /home/liyropt/Projects/GIT/DNest/
-DNEST_LIBS  = -L /home/liyropt/Projects/GIT/DNest -ldnest
+DNEST_INCL  = -I /home/liyropt/Projects/GIT/CDNest/
+DNEST_LIBS  = -L /home/liyropt/Projects/GIT/CDNest -ldnest
 FFTW_INCL   = $(shell pkg-config --cflags fftw3) 
 FFTW_LIBS   = $(shell pkg-config --libs fftw3) 
 
@@ -58,7 +58,7 @@ EXEC     = recon
 SRC      = ./
 OBJS     = $(SRC)/allvars.o $(SRC)/recon.o $(SRC)/system.o $(SRC)/help.o \
            $(SRC)/read.o $(SRC)/psd.o $(SRC)/run.o $(SRC)/psd_celerite.o \
-           $(SRC)/psd_carma.o
+           $(SRC)/psd_carma.o $(SRC)/init.o $(SRC)/psd_fit.o
 
 OBJSALL =  $(SRC)/main.o $(OBJS)
  

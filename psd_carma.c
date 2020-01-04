@@ -125,11 +125,11 @@ void psd_carma_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
   
   sigma = exp(arg[0]);
   noise = exp(arg[num_params_psd_tot - 1]);
-
+    
   get_ar_roots(arg, ar_roots);
   get_poly_coefs(ar_roots, parset.carma_p, ar_coefs);
   get_ma_coefs(arg, ma_coefs);
-
+  
   for(j=0; j<n; j++)
   {
     ar_poly = ar_coefs[0];

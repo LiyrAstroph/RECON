@@ -77,7 +77,7 @@ void psd_harmonic_sqrt_array(double *fk, double *arg, double *psd_sqrt, int n)
     omega2_sqr[i] = exp(2.0 * arg[2 + (i)*3 + 1]);
     Q_sqr[i] = pow(exp(arg[2 + (i)*3 + 2]) - 1.0, 2.0)/4.0;
   }
-
+ 
   for(j=0; j<n; j++)
   {
     fk_sqr = fk[j]*fk[j];

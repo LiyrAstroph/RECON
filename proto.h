@@ -10,6 +10,10 @@
 #define _PROTO_H
 #include <complex.h>
 
+void init();
+void end();
+void set_var_range();
+
 int recon_init();
 int recon_end();
 double recon();
@@ -36,6 +40,22 @@ void read_parset();
 void read_sim_arg();
 void time_cad_cal();
 int recon_cmp(const void *a, const void *b);
+
+/* psd fit*/
+double psd_fit();
+void psd_fit_init();
+void psd_fit_end();
+void from_prior_fit(void *model);
+double log_likelihoods_cal_fit(const void *model);
+double log_likelihoods_cal_initial_fit(const void *model);
+double perturb_fit(void *model);
+void set_par_fix_fit();
+void set_par_range_fit();
+double prob_fit(const void *model);
+void psd_fit_postproc();
+void restart_action_fit(int iflag);
+void kill_action_fit(int i, int i_copy);
+void accept_action_fit();
 
 /* psd */
 int psddata_cal();

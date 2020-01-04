@@ -21,7 +21,7 @@ double recon_run(int argc, char **argv)
 {
   int opt;
   double t0=0.0, t1=0.0, dt;
-  double logz=0.0;
+  double logz=0.0, logz_fit=0.0;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &thistask);
   MPI_Comm_size(MPI_COMM_WORLD, &totaltask);
@@ -166,8 +166,13 @@ double recon_run(int argc, char **argv)
   /* run the code */
   if(recon_flag_help == 0)
   {
-    read_parset();
+    init();
+    if(recon_flag_cal_psd != 1 && recon_flag_sim != 1)
+    {
+      logz_fit = psd_fit();
+    }  
     logz = recon();
+    end();
   }
 
   if(thistask == roottask)

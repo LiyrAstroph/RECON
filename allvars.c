@@ -26,6 +26,10 @@ double time_media, time_cad_min, time_cad_media, flux_data_min, flux_data_max, f
 
 double freq_limit_data_lower, freq_limit_data_upper;
 
+int nf_data;
+double *freq_data, *psd_data, *psd_data_model, *psd_data_period_model;
+double *par_fit_best, *par_fit_best_std;
+
 int nd_sim;
 double DT, V, W;
 double *time_sim, *flux_sim, *flux_data_sim;
