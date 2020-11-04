@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 CC       = mpicc
-OPTIMIZE = -O2 -Wall -fPIC
+OPTIMIZE = -O2 -Wall -fPIC -fcommon
 
 
 #------------target system---------

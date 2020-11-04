@@ -18,7 +18,7 @@
 #include <gsl/gsl_randist.h>
 #include <mpi.h>
 
-#include "dnestvars.h"
+#include "dnest.h"
 
 #include "allvars.h"
 #include "proto.h"
@@ -87,7 +87,7 @@ double recon()
   {
     if(recon_flag_cal_psd != 1)
     {
-      logz = dnest(argc, argv, fptrset, num_params, options_file);
+      logz = dnest(argc, argv, fptrset, num_params, NULL, NULL, NULL, "./data/", options_file, NULL);
       if(parset.flag_saveoutput == 0)
       {
         recon_postproc();
@@ -122,7 +122,7 @@ int recon_postproc()
     int size_of_modeltype = num_params * sizeof(double);
     double *psd;
 
-    get_posterior_sample_file(options_file, posterior_sample_file);
+    dnest_get_posterior_sample_file(posterior_sample_file);
 
     //file for posterior sample
     fp = fopen(posterior_sample_file, "r");

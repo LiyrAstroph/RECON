@@ -75,3 +75,5 @@ FILE *finfo;
 // for harmonic
 // for carma
 complex *workspace_complex;
+
+char options_file[256];

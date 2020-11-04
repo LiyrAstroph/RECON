@@ -681,24 +681,37 @@ void read_sim_arg()
 void get_num_particles(char *fname)
 {
   FILE *fp;
-  char buf[256], buf1[256];
+  char buf[256], buf1[256], buf2[256];
   fp = fopen(fname, "r");
   if(fp == NULL)
   {
     fprintf(stderr, "# Error: Cannot open file %s\n", fname);
     exit(-1);
   }
+  
+  /* default number particles */
+  num_particles = 1;
 
-  buf[0]='#';
-  while(buf[0]=='#')
+  while(!feof(fp))
   {
     fgets(buf, 256, fp);
-    if(sscanf(buf, "%s", buf1) < 1)  // a blank line
+    if(buf[0] == '#')
+      continue;
+    if(sscanf(buf, "%s%s", buf1, buf2) < 1)  /* blank line */
+      continue;
+    if(sscanf(buf, "%s%s", buf1, buf2) < 2)
     {
-      buf[0] = '#';
+      fprintf(stderr, "Error in geting number of particles.\n"
+                      "Usually due to incorrect options.\n");
+      exit(0);
+    }
+    if(strcmp(buf1, "NumberParticles") == 0)
+    {
+      num_particles = atoi(buf2);
+      break;
     }
   }
-  sscanf(buf, "%d", &num_particles);
+
   fclose(fp);
 }
 

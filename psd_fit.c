@@ -19,7 +19,7 @@
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_rng.h>
 
-#include "dnestvars.h"
+#include "dnest.h"
 
 #include "allvars.h"
 #include "proto.h"
@@ -66,9 +66,12 @@ double psd_fit()
     strcpy(argv[argc++], "-l");
   }
 
+  strcpy(argv[argc++], "-g");
+  strcpy(argv[argc++], "0");
+
   psd_fit_init();
 
-  logz = dnest(argc, argv, fptrset_fit, num_params, options_file);
+  logz = dnest(argc, argv, fptrset_fit, num_params, NULL, NULL, NULL, "./data/", options_file, NULL);
   
   psd_fit_postproc();
 
@@ -98,7 +101,7 @@ void psd_fit_postproc()
     int size_of_modeltype = num_params * sizeof(double);
     double *pm;
 
-    get_posterior_sample_file(options_file, posterior_sample_file);
+    dnest_get_posterior_sample_file(posterior_sample_file);
 
     //file for posterior sample
     fp = fopen(posterior_sample_file, "r");

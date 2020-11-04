@@ -15,7 +15,7 @@
 #include <math.h>
 #include <mpi.h>
 
-#include "dnestvars.h"
+#include "dnest.h"
 
 #include "allvars.h"
 #include "proto.h"

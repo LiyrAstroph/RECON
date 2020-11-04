@@ -26,7 +26,6 @@ void genlc_array_simple_delta(const void *model);
 int get_line_number(char *fname);
 void get_num_particles(char *fname);
 void get_max_num_levels(char *fname);
-void get_posterior_sample_file(char *fname, char *samplefile);
 int read_data(char *fname, int n, double *t, double *f, double *e);
 void set_par_range();
 void set_par_fix();

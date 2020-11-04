@@ -114,4 +114,8 @@ enum PSDPERIODMODEL {none, delta, gaussian, lorentzian};
 
 // for carma
 extern complex *workspace_complex;
+
+extern char options_file[256];
+
+extern double *limits;
 #endif
