@@ -71,7 +71,7 @@ double psd_fit()
 
   psd_fit_init();
 
-  logz = dnest(argc, argv, fptrset_fit, num_params, NULL, NULL, NULL, "./data/", options_file, NULL);
+  logz = dnest(argc, argv, fptrset_fit, num_params, NULL, NULL, NULL, "./data/", options_file, NULL, NULL);
   
   psd_fit_postproc();
 

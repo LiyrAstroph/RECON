@@ -87,7 +87,7 @@ double recon()
   {
     if(recon_flag_cal_psd != 1)
     {
-      logz = dnest(argc, argv, fptrset, num_params, NULL, NULL, NULL, "./data/", options_file, NULL);
+      logz = dnest(argc, argv, fptrset, num_params, NULL, NULL, NULL, "./data/", options_file, NULL, NULL);
       if(parset.flag_saveoutput == 0)
       {
         recon_postproc();
