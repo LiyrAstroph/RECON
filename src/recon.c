@@ -31,6 +31,20 @@ DNestFptrSet *fptrset;
  *
  */
 
+double (*psdfunc)(double, double *);
+double (*psdfunc_sqrt)(double, double *);
+
+double (*psdfunc_period)(double, double *);
+double (*psdfunc_period_sqrt)(double, double *);
+
+void (*psdfunc_array)(double *, double *, double *, int );
+void (*psdfunc_sqrt_array)(double *, double *, double *, int );
+
+void (*psdfunc_period_array)(double *, double *, double *, int );
+void (*psdfunc_period_sqrt_array)(double *, double *, double *, int );
+
+void (*func_genlc_array)(const void *);
+
 double recon()
 {
   int i, argc=0, narg=9;

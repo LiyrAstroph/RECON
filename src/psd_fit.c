@@ -18,6 +18,7 @@
 #include <mpi.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_rng.h>
+#include <string.h>
 
 #include "dnest.h"
 

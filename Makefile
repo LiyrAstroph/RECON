@@ -55,14 +55,14 @@ endif
 
 
 EXEC     = recon
-SRC      = ./
+SRC      = ./src
 OBJS     = $(SRC)/allvars.o $(SRC)/recon.o $(SRC)/system.o $(SRC)/help.o \
            $(SRC)/read.o $(SRC)/psd.o $(SRC)/run.o $(SRC)/psd_celerite.o \
            $(SRC)/psd_carma.o $(SRC)/init.o $(SRC)/psd_fit.o
 
 OBJSALL =  $(SRC)/main.o $(OBJS)
  
-INCL     = Makefile proto.h allvars.h      
+INCL     = Makefile $(SRC)/proto.h $(SRC)/allvars.h      
 
 OPTIONS  = $(OPTIMIZE)
 CFLAGS   = $(OPTIONS) $(GSL_INCL) $(LAPACK_INCL) $(MPICHINCL) $(DNEST_INCL) $(FFTW_INCL)
@@ -71,7 +71,7 @@ LIBS     = $(GSL_LIBS) $(LAPACK_LIBS) $(MPICHLIB) $(DNEST_LIBS) $(FFTW_LIBS)
 $(EXEC):$(OBJS) $(OBJSALL)
 	cd $(SRC)
 	$(CC) $(OBJSALL) $(LIBS) -o $@
-	$(CC) $(OPTIMIZE) $(CFLAGS) $(LIBS) -fPIC -shared -o librecon.so $(OBJS)
+	#$(CC) $(OPTIMIZE) $(CFLAGS) $(LIBS) -fPIC -shared -o librecon.so $(OBJS)
 
 $(OBJS): $(INCL)
 

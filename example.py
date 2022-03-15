@@ -13,5 +13,5 @@ sample = cyrecon.cyrecon()
 logz = sample.run()
 
 if rank == 0:
-  print logz
+  print(logz)
 

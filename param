@@ -7,7 +7,7 @@
 
 FileDir         .                # file direcotry
 
-FileName        data/sim.txt     # file name
+FileName        data/ngc5548.txt     # file name
 
 #===============================================
 # psd model configurations
@@ -22,7 +22,7 @@ PSDType          0             # simple,        0: single power-law
 
                                  # carma, orders p:q, e.g., 2:1
 
-PSDPeriodModel   Gaussian            # None; Delta, Gaussian; Lorentzian
+PSDPeriodModel   None            # None; Delta, Gaussian; Lorentzian
 
 FlagOnlyFit      0               # 1, only do periodogram fitting; 0, do full analysis
 #===============================================
