@@ -6,27 +6,22 @@
 
 import numpy as np
 import os
+import sys
 import matplotlib.pyplot as plt
+import configparser as cfgpars 
 
-def read_params():
+def read_params(fname):
   """
   read parameter file
   """
-  fp = open("param")
-
-  tags = ["PSDModel", "PSDType", "PSDPeriodModel", "FileName"]
-  params={}
-
-  for line in fp.readlines():
-    if line[0] == "#" or line.strip() == "":
-      continue
-
-    sp = line.split()
-    for tag in tags:
-      if tag == sp[0]:
-        params[tag] = sp[1].lower()
-    
-  fp.close()
+  config = cfgpars.RawConfigParser(delimiters=' ', comment_prefixes='#', inline_comment_prefixes='#', \
+      default_section=cfgpars.DEFAULTSECT, empty_lines_in_values=False)
+  
+  with open(fname) as f:
+      file_content = '[dump]\n' + f.read()
+  
+  config.read_string(file_content)
+  params = config["dump"]
   
   return params
 
@@ -41,7 +36,7 @@ def psd_harmonic(params, freq, arg):
   psd[:] += S1 * omega1_sqr**2/((freq**2 - omega1_sqr)**2 + 2*omega1_sqr * freq**2)
   noise = np.exp(arg[2 + (harmonic_term_num-1) * 3])
 
-  for j in xrange(harmonic_term_num-1):
+  for j in range(harmonic_term_num-1):
     S2 = np.exp(arg[2+j*3])
     omega2_sqr = np.exp(2.0*arg[2+j*3+1])
     Q_sqr = (np.exp(arg[2+j*3+2])-1.0)**2/4.0
@@ -80,7 +75,7 @@ def harmonic_plot(params):
   ax.set_ylabel('Flux')
   
   ax = fig.add_subplot(122)
-  for i in xrange(sample.shape[0]):
+  for i in range(sample.shape[0]):
     psd[i, :] = psd_harmonic(params, freq, sample[i, :])
   
   psd_mean = np.mean(np.log10(psd), axis=0)
@@ -106,7 +101,7 @@ def psd_carma(params, freq, arg):
   num_params = carma_p + carma_q + 1 + 1
   
   roots = np.zeros(carma_p, dtype=complex)
-  for i in xrange(carma_p//2):
+  for i in range(carma_p//2):
     a = np.exp(arg[1+i*2])
     b = np.exp(arg[1+i*2+1])
     roots[i*2] = -2.0*np.pi*(a + b*1j)
@@ -120,14 +115,14 @@ def psd_carma(params, freq, arg):
   
   ma_coefs = np.zeros(carma_p+1)
   ma_coefs[0] = 1.0;
-  for i in xrange(1, carma_q+1):
+  for i in range(1, carma_q+1):
     ma_coefs[i] = np.exp(arg[1+carma_p + i -1])
   for i in range(carma_q+1, carma_p+1):
     ma_coefs[i] = 0.0
   
   ar_poly = np.zeros(len(freq), dtype=complex)
   ma_poly = np.zeros(len(freq), dtype=complex)
-  for k in xrange(carma_p+1):
+  for k in range(carma_p+1):
     tmp = (2.0*np.pi*freq*1j)**(k)
     ar_poly += ar_coefs[k] * tmp
     ma_poly += ma_coefs[k] * tmp
@@ -145,7 +140,7 @@ def carma_plot(params):
   carma_p = int(pstr[0])
   carma_q = int(pstr[1])
   num_params = carma_p + carma_q + 1 + 1
-  print num_params
+  print(num_params)
 
   lc = np.loadtxt(params["FileName"])
   lc_recon = np.loadtxt("data/recon_mean.txt")
@@ -171,7 +166,7 @@ def carma_plot(params):
   ax.set_ylabel('Flux')
   
   ax = fig.add_subplot(122)
-  for i in xrange(sample.shape[0]):
+  for i in range(sample.shape[0]):
     psd[i, :] = psd_carma(params, freq, sample[i, :])
   
   psd_mean = np.mean(np.log10(psd), axis=0)
@@ -269,7 +264,7 @@ def simple_plot(params):
   ax.set_ylabel('Flux')
   
   ax = fig.add_subplot(122)
-  for i in xrange(sample.shape[0]):
+  for i in range(sample.shape[0]):
     psd[i, :] = psd_simple(params, freq, sample[i, :])
   
   psd_mean = np.mean(np.log10(psd), axis=0)
@@ -295,7 +290,11 @@ def do_plot(params):
     
 
 if __name__=="__main__":
-  params = read_params()
+  
+  if len(sys.argv) < 2:
+    raise Exception("Please specify a param file as: 'python psd_plot.py param'.")
+
+  params = read_params(sys.argv[1])
   do_plot(params)
   
 

@@ -303,18 +303,18 @@ def genlc_psd_data(model):
   
   arg = model[:num_params_psd_sto]
   
-  fft_work = np.zeros(nd_sim/2+1, dtype=complex)
+  fft_work = np.zeros(nd_sim//2+1, dtype=complex)
   
   fft_work[0] = np.random.randn()+1j*0.0
   
-  freq = 1.0/(nd_sim * DT) * np.linspace(0.0, nd_sim/2, nd_sim/2+1)
-  fft_work[1:nd_sim/2] = psd_power_law_sqrt(freq[1:nd_sim/2], arg)/np.sqrt(2.0) \
-                        * (np.random.randn(nd_sim/2-1) + 1j*np.random.randn(nd_sim/2-1))
-  fft_work[nd_sim/2] = psd_power_law_sqrt(freq[nd_sim/2:], arg) * (np.random.randn() + 1j*0.0)
+  freq = 1.0/(nd_sim * DT) * np.linspace(0.0, nd_sim//2, nd_sim//2+1)
+  fft_work[1:nd_sim//2] = psd_power_law_sqrt(freq[1:nd_sim//2], arg)/np.sqrt(2.0) \
+                        * (np.random.randn(nd_sim//2-1) + 1j*np.random.randn(nd_sim//2-1))
+  fft_work[nd_sim//2] = psd_power_law_sqrt(freq[nd_sim//2:], arg) * (np.random.randn() + 1j*0.0)
   
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
-    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*np.random.rand(nd_sim/2)*2.0*np.pi)
+    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*np.random.rand(nd_sim//2)*2.0*np.pi)
   
   fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
   
@@ -336,13 +336,13 @@ def load_sample():
   global sample
   sample = np.loadtxt("data/posterior_sample.txt")
 
-  print "AR:", np.mean(sample[:, 0]/np.log(10.0)) + 2.0*np.log10(flux_scale), np.std(sample[:, 0]/np.log(10.0))
-  print "alpha:", np.mean(sample[:, 1]), np.std(sample[:, 1])
+  print("AR:", np.mean(sample[:, 0]/np.log(10.0)) + 2.0*np.log10(flux_scale), np.std(sample[:, 0]/np.log(10.0)))
+  print("alpha:", np.mean(sample[:, 1]), np.std(sample[:, 1]))
   
   if num_params_psd_per > 0:
-    print "AP:", np.mean(sample[:, 3]/np.log(10.0)) + 2.0*np.log10(flux_scale), np.std(sample[:, 3]/np.log(10.0))
-    print "nu0:", np.mean(sample[:, 4]/np.log(10.0)), np.std(sample[:, 4]/np.log(10.0))
-    print "w:", np.mean(sample[:, 5]/np.log(10.0)), np.std(sample[:, 5]/np.log(10.0))
+    print("AP:", np.mean(sample[:, 3]/np.log(10.0)) + 2.0*np.log10(flux_scale), np.std(sample[:, 3]/np.log(10.0)))
+    print("nu0:", np.mean(sample[:, 4]/np.log(10.0)), np.std(sample[:, 4]/np.log(10.0)))
+    print("w:", np.mean(sample[:, 5]/np.log(10.0)), np.std(sample[:, 5]/np.log(10.0)))
 
 #=======================================================
 # load observed light curve
@@ -369,7 +369,7 @@ def load_lcdata():
   time_media = (lc[0, 0] + lc[-1, 0])/2.0
   flux_mean = np.mean(lc[:, 1])
   flux_scale = (np.max(lc[:, 1]) - np.min(lc[:, 1]))/2.0
-  print "DT:", DT, time_media, flux_scale, flux_mean
+  print("DT:", DT, time_media, flux_scale, flux_mean)
 
 #=======================================================
 # load param  
@@ -378,12 +378,15 @@ def load_lcdata():
 def load_param():
   global parset
   parset = {}
+  
+  parset['PeriodPSDProfType'] = 0
+  
   fp = open("param", "r")
   for line in fp.readlines():
     line = line.lstrip()
     line = line.rstrip() + "  #"
     line = line.lstrip()
-    if line[0] is not '#':
+    if line[0] != '#':
       arr = line.split()
       parset[arr[0]] = arr[1]
   
@@ -440,11 +443,11 @@ def pb_TR(doplot=False):
     #plt.show()
   
   pb = np.sum(TR>TRobs)*1.0/ns
-  print "TR:", pb
+  print("TR:", pb)
   
   if doplot:
-   plt.hist(TR, bins=50, normed=True, color='r')
-   plt.hist(TRobs, bins=50, normed=True, color='b')
+   plt.hist(TR, bins=50, density=True, color='r')
+   plt.hist(TRobs, bins=50, density=True, color='b')
    plt.show()
    plt.close()
 
@@ -468,7 +471,7 @@ def pb_TLS(doplot=False):
   
   period_obs = 1.0/ls_freq[idxmax]/365.0
   lspmax_obs = lsp_data[idxmax]
-  print "LS data:", (period_obs, lspmax_obs)
+  print("LS data:", (period_obs, lspmax_obs))
 
   TLS_obs = lspmax_obs
   TLS = np.zeros(ns)
@@ -489,7 +492,7 @@ def pb_TLS(doplot=False):
    
     
   pb_TLS = np.sum(TLS>TLS_obs)*1.0/ns
-  print "TLS:", pb_TLS
+  print("TLS:", pb_TLS)
   
   if doplot:
     plt.hist(TLS, bins=50)
@@ -517,7 +520,7 @@ def pb_TPDM(doplot=False):
   P = pyPDM.PyPDM(ts, fs)
   fpdm, tpdm_data = P.pdmEquiBinCover(5, 5, pdm_scan)
   idxmin = np.argmin(tpdm_data)
-  print "PDM:", fpdm[idxmin], tpdm_data[idxmin]
+  print("PDM:", fpdm[idxmin], tpdm_data[idxmin])
   
   TPDM_obs = 1.0 - tpdm_data[idxmin]
   TPDM = np.zeros(ns)
@@ -536,7 +539,7 @@ def pb_TPDM(doplot=False):
     #plt.show()
   
   pb_TPDM = np.sum(TPDM>TPDM_obs)*1.0/ns
-  print "TPDM:", pb_TPDM
+  print("TPDM:", pb_TPDM)
   
   if doplot:
     plt.hist(TPDM, bins=50)
@@ -572,7 +575,7 @@ if __name__=="__main__":
   ncycle = 3.
   tpmin = 100.0
   flag_endmatch = True
-  print flag_endmatch
+  print(flag_endmatch)
 
   load_param()
   
@@ -598,7 +601,7 @@ if __name__=="__main__":
   load_sample()
   
   tspan = lc[-1, 0] - lc[0, 0]
-  print "Tspan:", tspan/365.0
+  print("Tspan:", tspan/365.0)
   ls_freq = np.logspace(np.log10(1.0/tpmin), np.log10(1.0/(tspan/ncycle)), 500)
   pdm_scan = pyPDM.Scanner(minVal=tpmin, maxVal=tspan/ncycle, dVal=(tspan/ncycle-tpmin)/500, mode="period")
   
@@ -607,7 +610,7 @@ if __name__=="__main__":
   else:
     nd_sim = ((sample.shape[1] - num_params_psd) * 2)//3
   
-  print sample.shape[1], nd_sim, num_params_psd
+  print(sample.shape[1], nd_sim, num_params_psd)
 
   #test_genlc()
 
