@@ -114,7 +114,7 @@ def psd_carma(params, freq, arg):
   ar_coefs[:] = coefs[::-1].real
   
   ma_coefs = np.zeros(carma_p+1)
-  ma_coefs[0] = 1.0;
+  ma_coefs[0] = 1.0
   for i in range(1, carma_q+1):
     ma_coefs[i] = np.exp(arg[1+carma_p + i -1])
   for i in range(carma_q+1, carma_p+1):
@@ -207,16 +207,16 @@ def psd_simple(params, freq, arg):
     psd[idx] = A * (freq[idx]/fc)**(-alpha_lo) + noise
     num_params_psd = 5
   
-  if params["PSDPeriodModel"] == "delta":
+  if params["PSDPeriodModel"].lower() == "delta":
     Ap = np.exp(arg[num_params_psd])
     nu0 = np.exp(arg[num_params_psd+1])
     phi = np.exp(arg[num_params_psd+2])
     i0 = int( (np.log10(nu0) - np.log10(freq[0]))/(np.log10(freq[1]) - np.log10(freq[0])))
     psd[i0] += Ap
-  elif params["PSDPeriodModel"] == "gaussian":
+  elif params["PSDPeriodModel"].lower() == "gaussian":
     Ap, center, sig = np.exp(arg[num_params_psd:num_params_psd+3])
     psd += Ap/np.sqrt(2.0*np.pi)/sig * np.exp(-0.5*(freq - center)**2/sig**2)
-  elif params["PSDPeriodModel"] == "lorentzian":
+  elif params["PSDPeriodModel"].lower() == "lorentzian":
     Ap, center, sig = np.exp(arg[num_params_psd:num_params_psd+3])
     psd += Ap/np.pi * sig/(sig*sig + (freq - center)**2)
 
@@ -233,11 +233,11 @@ def simple_plot(params):
   else:
     num_params = 5
 
-  if params["PSDPeriodModel"] == "delta":
+  if params["PSDPeriodModel"].lower() == "delta":
     num_params += 3
-  elif params["PSDPeriodModel"] == "gaussian":
+  elif params["PSDPeriodModel"].lower() == "gaussian":
     num_params += 3
-  elif params["PSDPeriodModel"] == "lorentzian":
+  elif params["PSDPeriodModel"].lower() == "lorentzian":
     num_params += 3
   else:
     num_params += 0
@@ -281,11 +281,11 @@ def simple_plot(params):
   plt.show()
 
 def do_plot(params):
-  if params["PSDModel"] == "harmonic":
+  if params["PSDModel"].lower() == "harmonic":
     harmonic_plot(params)
-  elif params["PSDModel"] == "carma":
+  elif params["PSDModel"].lower() == "carma":
     carma_plot(params)
-  elif params["PSDModel"] == "simple":
+  elif params["PSDModel"].lower() == "simple":
     simple_plot(params)
     
 

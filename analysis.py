@@ -67,8 +67,8 @@ def fft_psd_rebin(freq, psd):
   width_log = np.log10(1.1)
   nbins_min = 1
 
-  ic = 0;
-  f0 = freq_work[0];
+  ic = 0
+  f0 = freq_work[0]
   i0 = 0
 
   freq_rebin = np.zeros(len(freq))
@@ -208,7 +208,7 @@ def genlc(model):
     arg = model[num_params_psd_sto:num_params_psd]
     fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*model[num_params_psd + nd_sim:]*2.0*np.pi)
   
-  fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
+  fs = fft.irfft(fft_work, n=nd_sim) * nd_sim # note the factor 1/n in numpy ifft,
   
   norm = 1.0/np.sqrt(nd_sim) * np.sqrt(nd_sim/(2.0*nd_sim * DT))
   
@@ -242,7 +242,7 @@ def genlc_data(model):
     arg = model[num_params_psd_sto:num_params_psd]
     fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*model[num_params_psd + nd_sim:]*2.0*np.pi)
   
-  fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
+  fs = fft.irfft(fft_work, n=nd_sim) * nd_sim # note the factor 1/n in numpy ifft,
   
   norm = 1.0/np.sqrt(nd_sim) * np.sqrt(nd_sim/(2.0*nd_sim * DT))
   
@@ -281,7 +281,7 @@ def genlc_psd(model):
     arg = model[num_params_psd_sto:num_params_psd]
     fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*np.random.rand(nd_sim/2)*2.0*np.pi)
   
-  fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
+  fs = fft.irfft(fft_work, n=nd_sim) * nd_sim # note the factor 1/n in numpy ifft,
   
   norm = 1.0/np.sqrt(nd_sim) * np.sqrt(nd_sim/(2.0*nd_sim * DT))
   
@@ -303,23 +303,24 @@ def genlc_psd_data(model):
   
   arg = model[:num_params_psd_sto]
   
-  fft_work = np.zeros(nd_sim//2+1, dtype=complex)
+  nd_fft = nd_sim//2 + 1
+  fft_work = np.zeros(nd_fft, dtype=complex)
   
   fft_work[0] = np.random.randn()+1j*0.0
   
-  freq = 1.0/(nd_sim * DT) * np.linspace(0.0, nd_sim//2, nd_sim//2+1)
-  fft_work[1:nd_sim//2] = psd_power_law_sqrt(freq[1:nd_sim//2], arg)/np.sqrt(2.0) \
-                        * (np.random.randn(nd_sim//2-1) + 1j*np.random.randn(nd_sim//2-1))
-  fft_work[nd_sim//2] = psd_power_law_sqrt(freq[nd_sim//2:], arg) * (np.random.randn() + 1j*0.0)
+  freq = 1.0/(nd_sim * DT) * np.linspace(0.0, nd_fft-1, nd_fft)
+  fft_work[1:nd_fft-1] = psd_power_law_sqrt(freq[1:nd_fft-1], arg)/np.sqrt(2.0) \
+                        * (np.random.randn(nd_fft-2) + 1j*np.random.randn(nd_fft-2))
+  fft_work[nd_fft-1] = psd_power_law_sqrt(freq[nd_fft-1:], arg) * (np.random.randn() + 1j*0.0)
   
   if num_params_psd_per > 0:
     arg = model[num_params_psd_sto:num_params_psd]
-    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*np.random.rand(nd_sim//2)*2.0*np.pi)
+    fft_work[1:] += psd_period_sqrt(freq[1:], arg) * np.exp(1j*np.random.rand(nd_fft-1)*2.0*np.pi)
   
-  fs = fft.irfft(fft_work) * nd_sim # note the factor 1/n in numpy ifft,
+  fs = fft.irfft(fft_work, n=nd_sim) * nd_sim # note the factor 1/n in numpy ifft,
   
   norm = 1.0/np.sqrt(nd_sim) * np.sqrt(nd_sim/(2.0*nd_sim * DT))
-  
+   
   ts = DT * ( np.linspace(0, nd_sim-1, nd_sim) - nd_sim/2.0) + time_media
   fs = fs*norm*flux_scale + flux_mean
   
